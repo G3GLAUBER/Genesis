@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "▶ Genesis",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/CLI/main.py",
+            "args": [
+                "doctor"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}
