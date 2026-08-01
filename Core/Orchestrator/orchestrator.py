@@ -1,3 +1,4 @@
+from Core.context import Context
 from Core.registry import Registry
 
 
@@ -5,8 +6,8 @@ class Orchestrator:
     """
     Núcleo de coordenação do Projeto Gênesis.
 
-    Recebe comandos, consulta o Registry e executa
-    o módulo responsável.
+    Recebe um Context, consulta o Registry e executa
+    o módulo responsável pelo comando.
     """
 
     def __init__(self, registry: Registry):
@@ -18,13 +19,16 @@ class Orchestrator:
         """
         self._registry.register(command, handler)
 
-    def dispatch(self, command, *args, **kwargs):
+    def dispatch(self, context: Context, *args, **kwargs):
         """
-        Busca o comando no Registry e executa o responsável.
+        Busca o comando presente no Context e executa
+        o responsável registrado.
         """
         try:
-            handler = self._registry.get(command)
+            handler = self._registry.get(context.command)
         except ValueError as error:
-            raise ValueError(f"Comando desconhecido: {command}") from error
+            raise ValueError(
+                f"Comando desconhecido: {context.command}"
+            ) from error
 
         return handler(*args, **kwargs)

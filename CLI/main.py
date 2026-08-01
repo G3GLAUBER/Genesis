@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 import sys
+from uuid import uuid4
 
+from CLI.doctor import run_doctor
+from Core.context import Context
 from Core.Orchestrator.orchestrator import Orchestrator
 from Core.registry import Registry
-from CLI.doctor import run_doctor
 
 
 def banner():
@@ -47,11 +49,17 @@ def main():
 
     command = sys.argv[1].lower()
 
-    try:
-        exit_code = orchestrator.dispatch(command)
+    context = Context.create(
+        session_id=str(uuid4()),
+        command=command,
+        source="CLI",
+    )
 
-        if isinstance(exit_code, int):
-            sys.exit(exit_code)
+    try:
+        result = orchestrator.dispatch(context)
+
+        if isinstance(result, int):
+            sys.exit(result)
     except ValueError as error:
         print(f"\n{error}")
         help_menu()
