@@ -1,6 +1,6 @@
 from pathlib import Path
 import sys
-
+from Core.result import Result
 
 ESSENTIAL_DIRECTORIES = [
     "Core",
@@ -60,7 +60,7 @@ def check_files(project_root: Path) -> bool:
     return True
 
 
-def run_doctor() -> int:
+def run_doctor() -> Result:
     project_root = Path(__file__).resolve().parent.parent
 
     print("\nGENESIS DOCTOR v1\n")
@@ -75,7 +75,13 @@ def run_doctor() -> int:
 
     if healthy:
         print("\nStatus: SAUDÁVEL")
-        return 0
+        return Result.success(
+    message="Sistema saudável",
+    data={"healthy": True},
+)
 
     print("\nStatus: PROBLEMAS ENCONTRADOS")
-    return 1
+    return Result.error(
+    message="Problemas encontrados",
+    data={"healthy": False},
+)
