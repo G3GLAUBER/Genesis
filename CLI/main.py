@@ -2,7 +2,7 @@
 
 import sys
 from doctor import run_doctor
-
+from Core.Orchestrator.orchestrator import Orchestrator
 def banner():
     print("=" * 50)
     print("                 GÊNESIS")
@@ -30,10 +30,11 @@ def help_menu():
 def main():
     banner()
 
-    commands = {
-        "doctor": doctor,
-        "memory": memory,
-        "help": help_menu,
+orchestrator = Orchestrator()
+
+orchestrator.register("doctor", doctor)
+orchestrator.register("memory", memory)
+orchestrator.register("help", help_menu)
     }
 
     if len(sys.argv) == 1:
@@ -42,14 +43,14 @@ def main():
 
     command = sys.argv[1].lower()
 
-    if command in commands:
-        exit_code = commands[command]()
+    try:
+    exit_code = orchestrator.dispatch(command)
 
-        if isinstance(exit_code, int):
-            sys.exit(exit_code)
-    else:
-        print(f"\nComando desconhecido: {command}")
-        help_menu()
+    if isinstance(exit_code, int):
+        sys.exit(exit_code)
+except ValueError as error:
+    print(f"\n{error}")
+    help_menu()
 
 
 if __name__ == "__main__":
