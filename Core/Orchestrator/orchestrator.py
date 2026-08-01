@@ -1,25 +1,30 @@
+from Core.registry import Registry
+
+
 class Orchestrator:
     """
     Núcleo de coordenação do Projeto Gênesis.
 
-    Recebe comandos e os encaminha para o módulo responsável.
+    Recebe comandos, consulta o Registry e executa
+    o módulo responsável.
     """
 
-    def __init__(self):
-        self._routes = {}
+    def __init__(self, registry: Registry):
+        self._registry = registry
 
     def register(self, command, handler):
         """
-        Registra um comando.
+        Registra um comando no Registry.
         """
-        self._routes[command] = handler
+        self._registry.register(command, handler)
 
     def dispatch(self, command, *args, **kwargs):
         """
-        Encaminha um comando para o módulo responsável.
+        Busca o comando no Registry e executa o responsável.
         """
+        try:
+            handler = self._registry.get(command)
+        except ValueError as error:
+            raise ValueError(f"Comando desconhecido: {command}") from error
 
-        if command not in self._routes:
-            raise ValueError(f"Comando desconhecido: {command}")
-
-        return self._routes[command](*args, **kwargs)
+        return handler(*args, **kwargs)

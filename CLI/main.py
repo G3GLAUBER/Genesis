@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 
 import sys
-from doctor import run_doctor
+
 from Core.Orchestrator.orchestrator import Orchestrator
+from Core.registry import Registry
+from CLI.doctor import run_doctor
+
+
 def banner():
     print("=" * 50)
     print("                 GÊNESIS")
@@ -30,12 +34,12 @@ def help_menu():
 def main():
     banner()
 
-orchestrator = Orchestrator()
+    registry = Registry()
+    orchestrator = Orchestrator(registry)
 
-orchestrator.register("doctor", doctor)
-orchestrator.register("memory", memory)
-orchestrator.register("help", help_menu)
-    }
+    orchestrator.register("doctor", doctor)
+    orchestrator.register("memory", memory)
+    orchestrator.register("help", help_menu)
 
     if len(sys.argv) == 1:
         help_menu()
@@ -44,13 +48,13 @@ orchestrator.register("help", help_menu)
     command = sys.argv[1].lower()
 
     try:
-    exit_code = orchestrator.dispatch(command)
+        exit_code = orchestrator.dispatch(command)
 
-    if isinstance(exit_code, int):
-        sys.exit(exit_code)
-except ValueError as error:
-    print(f"\n{error}")
-    help_menu()
+        if isinstance(exit_code, int):
+            sys.exit(exit_code)
+    except ValueError as error:
+        print(f"\n{error}")
+        help_menu()
 
 
 if __name__ == "__main__":
