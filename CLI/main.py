@@ -4,17 +4,19 @@ import sys
 from uuid import uuid4
 
 from CLI.doctor import run_doctor
+from Core.configuration import Configuration
 from Core.context import Context
 from Core.Orchestrator.orchestrator import Orchestrator
 from Core.registry import Registry
 
 
-def banner():
+def banner(config: Configuration):
     print("=" * 50)
-    print("                 GÊNESIS")
+    print(f"                 {config.system_name.upper()}")
     print("=" * 50)
     print("Sistema Operacional de Inteligência")
-    print("Versão: 0.1")
+    print(f"Versão: {config.version}")
+    print(f"Ambiente: {config.environment}")
     print("=" * 50)
 
 
@@ -34,7 +36,8 @@ def help_menu():
 
 
 def main():
-    banner()
+    config = Configuration.default()
+    banner(config)
 
     registry = Registry()
     orchestrator = Orchestrator(registry)
