@@ -8,9 +8,10 @@ from Core.configuration import Configuration
 from Core.context import Context
 from Core.Orchestrator.orchestrator import Orchestrator
 from Core.registry import Registry
+from Core.result import Result
 
 
-def banner(config: Configuration):
+def banner(config: Configuration) -> None:
     print("=" * 50)
     print(f"                 {config.system_name.upper()}")
     print("=" * 50)
@@ -20,22 +21,22 @@ def banner(config: Configuration):
     print("=" * 50)
 
 
-def doctor():
+def doctor() -> Result:
     return run_doctor()
 
 
-def memory():
+def memory() -> None:
     print("Abrindo Memory Engine...")
 
 
-def help_menu():
+def help_menu() -> None:
     print("\nComandos disponíveis:\n")
     print("doctor")
     print("memory")
     print("help")
 
 
-def main():
+def main() -> None:
     config = Configuration.default()
     banner(config)
 
@@ -61,11 +62,15 @@ def main():
     try:
         result = orchestrator.dispatch(context)
 
+        if isinstance(result, Result):
+            sys.exit(0 if result.is_success else 1)
+
         if isinstance(result, int):
             sys.exit(result)
     except ValueError as error:
         print(f"\n{error}")
         help_menu()
+        sys.exit(2)
 
 
 if __name__ == "__main__":
