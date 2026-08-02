@@ -1,3 +1,6 @@
+from collections.abc import Callable
+from typing import Any
+
 from Core.context import Context
 from Core.registry import Registry
 
@@ -10,16 +13,25 @@ class Orchestrator:
     o módulo responsável pelo comando.
     """
 
-    def __init__(self, registry: Registry):
+    def __init__(self, registry: Registry) -> None:
         self._registry = registry
 
-    def register(self, command, handler):
+    def register(
+        self,
+        command: str,
+        handler: Callable[..., Any],
+    ) -> None:
         """
         Registra um comando no Registry.
         """
         self._registry.register(command, handler)
 
-    def dispatch(self, context: Context, *args, **kwargs):
+    def dispatch(
+        self,
+        context: Context,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
         """
         Busca o comando presente no Context e executa
         o responsável registrado.

@@ -16,20 +16,20 @@ class LifecycleState(Enum):
 class Lifecycle:
     state: LifecycleState = LifecycleState.BOOT
 
-    def initialize(self):
+    def initialize(self) -> None:
         self.state = LifecycleState.INITIALIZING
 
-    def ready(self):
+    def ready(self) -> None:
         self.state = LifecycleState.READY
 
-    def start(self):
+    def start(self) -> None:
         self.state = LifecycleState.RUNNING
 
-    def stop(self):
+    def stop(self) -> None:
         self.state = LifecycleState.STOPPING
 
-    def stopped(self):
+    def stopped(self) -> None:
         self.state = LifecycleState.STOPPED
 
-    def fail(self):
+    def fail(self) -> None:
         self.state = LifecycleState.ERROR
