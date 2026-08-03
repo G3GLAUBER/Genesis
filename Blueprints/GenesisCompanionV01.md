@@ -10,16 +10,16 @@ plano demonstrativo e acompanhar sua execução pelos Engines existentes.
 O Companion pertence a `Interfaces/Companion/` e não contém regras de domínio:
 
 ```text
-Browser → HTTP Server → CompanionApplication
-                            ↓
-MissionEngine → Planner → MissionExecutionEngine
-                            ↓
-                AIOrchestrator → FakeProvider
+Browser → HTTP Server → CompanionApplication → Application Services
+                                                ↓
+                         MissionEngine → Planner → MissionExecutionEngine
+                                                ↓
+                                    AIOrchestrator → FakeProvider
 ```
 
-A interface compõe os componentes, traduz entrada HTTP em chamadas públicas e
-renderiza seus resultados. Mission, Planning, Execution e AI continuam como
-fontes oficiais das regras de negócio.
+A interface traduz entrada HTTP em chamadas públicas e renderiza seus
+resultados. O bootstrap da camada Application compõe os componentes. Mission,
+Planning, Execution e AI continuam como fontes oficiais das regras de negócio.
 
 ## Tecnologia
 

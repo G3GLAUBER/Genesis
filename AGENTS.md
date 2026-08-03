@@ -67,7 +67,8 @@ aprovadas para uso. Não simule sua existência nem antecipe abstrações sem
 Blueprint e review arquitetural. `Core/Orchestrator/router.py` e
 `Core/Orchestrator/session.py` estão vazios. `Engines/` contém componentes
 funcionais de AI, Mission, Planning, Execution e Workspace, além de estruturas
-vazias ou experimentais. `Agents/` permanece inicial.
+vazias ou experimentais. `Application/` coordena casos de uso e a composição
+das dependências para Interfaces. `Agents/` permanece inicial.
 
 ## Responsabilidades por área
 
@@ -78,6 +79,13 @@ vazias ou experimentais. `Agents/` permanece inicial.
 ### Core
 
 `Core/` é o Kernel compartilhado. Mantém contratos e infraestrutura de coordenação: Configuration, Context, Result, Registry, Orchestrator, EventBus, Dispatcher, Logger e Lifecycle. O Core deve permanecer pequeno, coeso e estável; nunca depende de Engines e não conhece detalhes internos de módulos ou fornecedores.
+
+### Application
+
+`Application/` coordena casos de uso entre Interfaces e Engines e centraliza a
+composição das dependências. Não contém regras de domínio, persistência ou
+estado global. Interfaces devem reutilizar seus serviços em vez de compor Engines
+diretamente.
 
 ### Engines
 

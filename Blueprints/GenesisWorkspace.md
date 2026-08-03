@@ -11,13 +11,13 @@ sem alterar o contrato público de `Mission` e sem persistência externa.
 ## Localização arquitetural
 
 As regras de domínio pertencem a `Engines/Workspace/`. A apresentação web fica
-em `Interfaces/Workspace/` e a composição com Mission, Planning e Execution
-continua em `Interfaces/Companion/`.
+em `Interfaces/Workspace/` e a coordenação com Mission, Planning e Execution
+fica na camada `Application/`.
 
 ```text
-Companion → WorkspaceManager → WorkspaceEngine → Result[Workspace]
-    ↓                                  ↓
-MissionEngine                  coleção em memória
+Companion → Application Services → WorkspaceManager → WorkspaceEngine
+                       ↓                         ↓
+                 MissionEngine          coleção em memória
 ```
 
 O Core e a CLI não conhecem Workspace. O Engine depende somente do contrato

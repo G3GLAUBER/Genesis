@@ -2,22 +2,20 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from Core.registry import Registry
+from Application.bootstrap import bootstrap_application
+from Application.models import MissionApplicationExecution
+from Application.services import (
+    MissionApplicationService,
+    WorkspaceApplicationService,
+)
 from Core.result import Result
-from Engines.AI import AIOrchestrator, FakeProvider
-from Engines.Execution import MissionExecutionEngine, MissionExecutionReport
-from Engines.Mission import Mission, MissionEngine
-from Engines.Planning import Plan, PlanStep, Planner
+from Engines.Execution import MissionExecutionEngine
+from Engines.Mission import MissionEngine
+from Engines.Planning import Planner
 from Engines.Workspace import Workspace, WorkspaceManager
 
 
-@dataclass(frozen=True)
-class CompanionExecution:
-    mission: Mission
-    plan: Plan
-    report: MissionExecutionReport
-    provider_id: str
-    workspace: Workspace | None = None
+CompanionExecution = MissionApplicationExecution
 
 
 @dataclass(frozen=True)
@@ -38,35 +36,26 @@ class CompanionApplication:
         workspace_manager: WorkspaceManager | None = None,
         active_workspace_id: str | None = None,
     ) -> None:
-        self._mission_engine = mission_engine
-        self._planner = planner
-        self._execution_engine = execution_engine
-        self._provider_id = provider_id
-        self._workspace_manager = workspace_manager or WorkspaceManager()
-        self._active_workspace_id = active_workspace_id
+        workspace_service = WorkspaceApplicationService(
+            workspace_manager or WorkspaceManager(),
+            active_workspace_id=active_workspace_id,
+        )
+        self._workspace_service = workspace_service
+        self._mission_service = MissionApplicationService(
+            mission_engine,
+            planner,
+            execution_engine,
+            provider_id=provider_id,
+            workspace_service=workspace_service,
+        )
 
     @classmethod
     def default(cls) -> CompanionApplication:
-        registry = Registry()
-        provider = FakeProvider()
-        registry.register(provider.provider_id, provider)
-        orchestrator = AIOrchestrator(
-            registry,
-            provider_ids=(provider.provider_id,),
-        )
-        workspace_manager = WorkspaceManager()
-        workspace_result = workspace_manager.create(
-            name="Workspace principal",
-            description="Workspace inicial do Genesis Companion",
-        )
-        return cls(
-            mission_engine=MissionEngine(),
-            planner=Planner(),
-            execution_engine=MissionExecutionEngine(orchestrator),
-            provider_id=provider.provider_id,
-            workspace_manager=workspace_manager,
-            active_workspace_id=workspace_result.data.id,
-        )
+        container = bootstrap_application()
+        application = cls.__new__(cls)
+        application._mission_service = container.mission_service
+        application._workspace_service = container.workspace_service
+        return application
 
     def create_workspace(
         self,
@@ -74,29 +63,24 @@ class CompanionApplication:
         name: str | None,
         description: str | None = "",
     ) -> Result:
-        result = self._workspace_manager.create(
-            name=name,
-            description=description,
+        return self._workspace_service.create(
+            name=name, description=description
         )
-        if result.is_success:
-            self._active_workspace_id = result.data.id
-        return result
 
     def get_workspace(self, workspace_id: str | None) -> Result:
-        return self._workspace_manager.get(workspace_id)
+        return self._workspace_service.get(workspace_id)
 
     def list_workspaces(self, *, include_archived: bool = False) -> Result:
-        return self._workspace_manager.list(include_archived=include_archived)
+        return self._workspace_service.list(
+            include_archived=include_archived
+        )
 
     def open_workspace(self, workspace_id: str | None) -> Result:
-        result = self._workspace_manager.get(workspace_id)
-        if result.is_success:
-            self._active_workspace_id = result.data.id
-        return result
+        return self._workspace_service.set_active(workspace_id)
 
     def dashboard(self) -> CompanionDashboard:
-        workspaces = self._workspace_manager.list().data
-        active_result = self._workspace_manager.get(self._active_workspace_id)
+        workspaces = self._workspace_service.list().data
+        active_result = self._workspace_service.get_active()
         active = active_result.data if active_result.is_success else None
         return CompanionDashboard(
             active_workspace=active,
@@ -113,77 +97,8 @@ class CompanionApplication:
         objective: str | None,
         workspace_id: str | None = None,
     ) -> Result:
-        selected_id = workspace_id or self._active_workspace_id
-        if selected_id is not None:
-            workspace_result = self._workspace_manager.get(selected_id)
-            if not workspace_result.is_success:
-                return workspace_result
-
-        mission_result = self._mission_engine.create(
+        return self._mission_service.execute_mission(
             title=title,
             objective=objective,
-            source="Companion",
+            workspace_id=workspace_id,
         )
-        if not mission_result.is_success:
-            return mission_result
-
-        mission = mission_result.data
-        plan_result = self._planner.create_plan(
-            mission=mission,
-            steps=self._demonstration_steps(),
-        )
-        if not plan_result.is_success:
-            return plan_result
-
-        plan = plan_result.data
-        execution_result = self._execution_engine.execute(
-            mission=mission,
-            plan=plan,
-        )
-        if not execution_result.is_success:
-            return execution_result
-
-        workspace = None
-        if selected_id is not None:
-            association_result = self._workspace_manager.add_mission(
-                selected_id,
-                mission_id=mission.id,
-            )
-            if not association_result.is_success:
-                return association_result
-            workspace = association_result.data
-
-        return Result.success(
-            message="Missão criada e executada pelo Genesis Companion",
-            data=CompanionExecution(
-                mission=mission,
-                plan=plan,
-                report=execution_result.data,
-                provider_id=self._provider_id,
-                workspace=workspace,
-            ),
-        )
-
-    @staticmethod
-    def _demonstration_steps() -> tuple[PlanStep, ...]:
-        understand = PlanStep.create(
-            title="Compreender o objetivo",
-            description="Analise o objetivo da missão e destaque seu foco.",
-            order=1,
-            capability="text_generation",
-        )
-        propose = PlanStep.create(
-            title="Propor a primeira ação",
-            description="Sugira uma primeira ação concreta para a missão.",
-            order=2,
-            dependencies=(understand.id,),
-            capability="text_generation",
-        )
-        review = PlanStep.create(
-            title="Revisar o plano de ação",
-            description="Revise as etapas e apresente uma conclusão objetiva.",
-            order=3,
-            dependencies=(propose.id,),
-            capability="text_generation",
-        )
-        return understand, propose, review

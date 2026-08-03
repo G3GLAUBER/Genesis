@@ -37,8 +37,9 @@ Event → EventBus → Dispatcher → listeners
 O fluxo demonstrativo do Companion é:
 
 ```text
-Browser → Companion → Mission → Planning → Execution → AI Orchestrator
-                  └→ Workspace em memória          └→ FakeProvider
+Browser → Companion → Application → Mission → Planning → Execution
+                              └→ Workspace          └→ AI Orchestrator
+                                                       └→ FakeProvider
 ```
 
 Chamadas diretas entre contratos públicos de Engines são permitidas quando um
@@ -50,16 +51,24 @@ formulação absoluta do ADR histórico de eventos.
 ## Camadas e direção de dependências
 
 ```text
-Interfaces/CLI → Engines → Core
-Agents         → contratos públicos de Engines/Core
-Core           ↛ Engines, Agents, Interfaces ou fornecedores
+Interfaces → Application → Engines → Core
+CLI        → Orchestrator/Registry → handlers
+Agents     → contratos públicos de Application/Engines/Core
+Core       ↛ Engines, Application, Agents, Interfaces ou fornecedores
 ```
 
 ### CLI e Interfaces
 
 Recebem entrada, validam formato, criam contexto quando aplicável, chamam casos
-de uso ou contratos públicos e apresentam resultados. Podem compor dependências
-na fundação atual, mas não devem se tornar fonte de regras de domínio.
+de uso e apresentam resultados. Não compõem Engines nem se tornam fonte de
+regras de domínio.
+
+### Application
+
+Camada oficial de casos de uso. Coordena contratos públicos dos Engines,
+concentra a composição em um bootstrap isolado e retorna resultados estruturados
+para qualquer Interface. Não contém regras de domínio, persistência ou estado
+global.
 
 ### Core
 
@@ -85,9 +94,9 @@ Blueprints nem decisões arquiteturais.
 
 ## Conceitos planejados, não implementados
 
-Uma camada de aplicação/casos de uso, persistência, Services e Storage dependem
-de Blueprint e review arquitetural antes da criação. A menção no Roadmap não
-autoriza sua implementação nem estabelece antecipadamente seus contratos.
+Persistência, Services de infraestrutura e Storage dependem de Blueprint e
+review arquitetural antes da criação. A menção no Roadmap não autoriza sua
+implementação nem estabelece antecipadamente seus contratos.
 
 ## Restrições atuais conhecidas
 

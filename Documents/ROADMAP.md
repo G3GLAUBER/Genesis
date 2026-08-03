@@ -11,13 +11,14 @@ a Blueprint aprovado.
 
 Estão implementados e testados: fundação do Core, CLI/Doctor, AI Provider e AI
 Orchestrator com FakeProvider, Mission, Planning, Execution, Companion local e
-Workspace em memória. Memory é experimental; Knowledge, Search, persistência,
-Agents e integrações reais ainda não são capacidades implementadas.
+Workspace em memória, coordenados pela Application Layer. Memory é experimental;
+Knowledge, Search, persistência, Agents e integrações reais ainda não são
+capacidades implementadas.
 
 ## Genesis 0.3 — Consolidação da fundação
 
 - 0.3.1: estabelecer autoridade documental e fontes canônicas;
-- definir por review a futura camada de aplicação/casos de uso;
+- 0.3.2: introduzir Application Layer e bootstrap centralizado;
 - decidir o destino do protótipo Memory antes de evoluí-lo;
 - padronizar contratos básicos, tempo e eventos sem quebrar APIs;
 - instituir verificações arquiteturais, typing, lint e cobertura.
