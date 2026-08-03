@@ -139,3 +139,79 @@ def test_companion_complete_workspace_mission_flow():
     assert execution.data.plan.mission_id == execution.data.mission.id
     assert execution.data.report.status is ExecutionStatus.COMPLETED
     assert opened.data.mission_ids == (execution.data.mission.id,)
+
+
+def test_operational_dashboard_tracks_missions_memory_and_executions():
+    application = CompanionApplication.default()
+    workspace = application.dashboard().active_workspace
+    execution = application.execute_mission(
+        title="Dashboard operacional",
+        objective="Atualizar métricas e timeline",
+        workspace_id=workspace.id,
+    )
+    memory = application.store_memory(
+        workspace_id=workspace.id,
+        mission_id=execution.data.mission.id,
+        category="resultado",
+        title="Sprint validada",
+        content="Companion operacional",
+    )
+
+    dashboard = application.dashboard()
+    timeline = application.timeline()
+
+    assert memory.is_success is True
+    assert dashboard.mission_count == 1
+    assert dashboard.memory_count == 1
+    assert dashboard.execution_count == 1
+    assert dashboard.application_health == "DISPONÍVEL"
+    assert dashboard.available_service_count == 3
+    assert dashboard.service_count == 3
+    assert dashboard.last_activity is not None
+    assert {item.title for item in timeline} == {
+        "Missão criada",
+        "Plano criado",
+        "Execução concluída",
+        "Memória registrada",
+    }
+
+
+def test_companion_lists_operational_data_only_for_active_workspace():
+    application = CompanionApplication.default()
+    first = application.dashboard().active_workspace
+    application.execute_mission(
+        title="Primeiro Workspace",
+        objective="Manter isolamento operacional",
+        workspace_id=first.id,
+    )
+    second = application.create_workspace(name="Segundo Workspace").data
+    application.store_memory(
+        workspace_id=second.id,
+        category="nota",
+        title="Memória isolada",
+        content="Somente no segundo Workspace",
+    )
+
+    assert application.list_missions().data == ()
+    assert len(application.list_memories().data) == 1
+    assert application.dashboard().active_workspace.id == second.id
+
+
+def test_application_health_is_degraded_without_memory_service():
+    registry = Registry()
+    provider = FakeProvider()
+    registry.register(provider.provider_id, provider)
+    application = CompanionApplication(
+        MissionEngine(),
+        Planner(),
+        MissionExecutionEngine(
+            AIOrchestrator(registry, provider_id=provider.provider_id)
+        ),
+        provider_id=provider.provider_id,
+    )
+
+    dashboard = application.dashboard()
+
+    assert dashboard.application_health == "DEGRADADO"
+    assert dashboard.available_service_count == 2
+    assert dashboard.service_count == 3

@@ -19,7 +19,8 @@ entrada e saída; Engines permanecem como fontes oficiais das regras de domínio
 ## Componentes
 
 - `MissionApplicationService`: cria missão, cria o plano demonstrativo, executa
-  a missão e opcionalmente a associa a um Workspace;
+  a missão, opcionalmente a associa a um Workspace e mantém histórico volátil
+  de missões e execuções da instância;
 - `WorkspaceApplicationService`: coordena criação, consulta, listagem,
   arquivamento, restauração, seleção ativa e associação de missões;
 - `MemoryService`: coordena armazenamento, busca, histórico, exclusão e limpeza

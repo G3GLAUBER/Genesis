@@ -14,6 +14,17 @@ class WorkspaceApplicationService:
         self._manager = manager
         self._active_workspace_id = active_workspace_id
 
+    @classmethod
+    def default(
+        cls,
+        *,
+        active_workspace_id: str | None = None,
+    ) -> WorkspaceApplicationService:
+        return cls(
+            WorkspaceManager(),
+            active_workspace_id=active_workspace_id,
+        )
+
     @property
     def active_workspace_id(self) -> str | None:
         return self._active_workspace_id

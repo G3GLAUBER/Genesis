@@ -1,4 +1,5 @@
 from Interfaces.Companion.application import (
+    CompanionActivity,
     CompanionApplication,
     CompanionDashboard,
     CompanionExecution,
@@ -6,6 +7,7 @@ from Interfaces.Companion.application import (
 
 
 __all__ = [
+    "CompanionActivity",
     "CompanionApplication",
     "CompanionDashboard",
     "CompanionExecution",

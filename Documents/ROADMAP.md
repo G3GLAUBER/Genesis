@@ -20,6 +20,7 @@ Agents e integrações reais ainda não são capacidades implementadas.
 - 0.3.1: estabelecer autoridade documental e fontes canônicas;
 - 0.3.2: introduzir Application Layer e bootstrap centralizado;
 - 0.3.3: estabelecer o contrato oficial da Memory Foundation em memória;
+- 0.3.4: tornar o Companion a primeira Interface operacional do Genesis;
 - padronizar contratos básicos, tempo e eventos sem quebrar APIs;
 - instituir verificações arquiteturais, typing, lint e cobertura.
 

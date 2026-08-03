@@ -132,3 +132,99 @@ def test_http_flow_creates_opens_workspace_and_associates_mission(
     assert "Missão no Workspace" in mission_content
     assert "Workspace aberto" in workspace_content
     assert "Nenhuma missão associada" not in workspace_content
+
+
+@pytest.mark.parametrize(
+    ("path", "expected"),
+    (
+        ("/", "Visão operacional"),
+        ("/workspaces", "Workspaces ativos"),
+        ("/missions", "Criar missão"),
+        ("/memory", "Nova memória"),
+        ("/executions", "Nenhuma execução registrada"),
+        ("/doctor", "Application Health"),
+        ("/settings", "Configurações"),
+    ),
+)
+def test_operational_pages_are_available(companion_server, path, expected):
+    with urlopen(f"{companion_server}{path}", timeout=2) as response:
+        content = response.read().decode("utf-8")
+
+    assert response.status == HTTPStatus.OK
+    assert expected in content
+    assert "Dashboard" in content
+    assert "Memórias" in content
+    assert "Saúde dos Serviços" in content
+
+
+def test_stylesheet_is_served_separately(companion_server):
+    with urlopen(
+        f"{companion_server}/static/styles.css",
+        timeout=2,
+    ) as response:
+        content = response.read().decode("utf-8")
+
+    assert response.status == HTTPStatus.OK
+    assert response.headers["Content-Type"] == "text/css; charset=utf-8"
+    assert ".sidebar" in content
+    assert "--accent" in content
+
+
+def test_http_memory_flow_stores_searches_and_filters(companion_server):
+    payload = urlencode(
+        {
+            "category": "decisão",
+            "title": "Interface operacional",
+            "content": "Dashboard sem frameworks",
+        }
+    ).encode()
+    request = Request(
+        f"{companion_server}/memory",
+        data=payload,
+        method="POST",
+    )
+    with urlopen(request, timeout=2) as response:
+        stored = response.read().decode("utf-8")
+    with urlopen(
+        f"{companion_server}/memory?q=dashboard&category=decis%C3%A3o",
+        timeout=2,
+    ) as response:
+        searched = response.read().decode("utf-8")
+
+    assert "Memória armazenada" in stored
+    assert "Interface operacional" in stored
+    assert "Interface operacional" in searched
+    assert "Workspace:" in searched
+
+
+def test_mission_page_lists_execution_after_post(companion_server):
+    payload = urlencode(
+        {"title": "Missão listada", "objective": "Aparecer na página"}
+    ).encode()
+    request = Request(
+        f"{companion_server}/missions",
+        data=payload,
+        method="POST",
+    )
+    with urlopen(request, timeout=2) as response:
+        posted = response.read().decode("utf-8")
+    with urlopen(f"{companion_server}/missions", timeout=2) as response:
+        listed = response.read().decode("utf-8")
+
+    assert "Missão listada" in posted
+    assert "Missão listada" in listed
+    assert "COMPLETED" in listed
+
+
+def test_application_health_is_distinct_from_genesis_doctor(companion_server):
+    with urlopen(f"{companion_server}/doctor", timeout=2) as response:
+        content = response.read().decode("utf-8")
+
+    assert response.status == HTTPStatus.OK
+    assert "Application Health" in content
+    assert "Saúde dos Serviços" in content
+    assert "Serviços disponíveis" in content
+    assert "DISPONÍVEL" in content
+    assert "SAUDÁVEL" not in content
+    assert "Health Score" not in content
+    assert "Este indicador não substitui o Genesis Doctor." in content

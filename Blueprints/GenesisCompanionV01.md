@@ -1,9 +1,11 @@
-# Blueprint — Genesis Companion v0.1
+# Blueprint — Genesis Companion
+
+**Versão:** 0.2
 
 ## Objetivo
 
-Oferecer uma interface web local mínima para criar uma missão, visualizar um
-plano demonstrativo e acompanhar sua execução pelos Engines existentes.
+Oferecer a primeira interface operacional local do Genesis para acompanhar
+Workspaces, missões, memórias, execuções, timeline e saúde da aplicação.
 
 ## Arquitetura
 
@@ -25,7 +27,7 @@ Planning, Execution e AI continuam como fontes oficiais das regras de negócio.
 
 - Python 3.12;
 - `http.server.ThreadingHTTPServer` da biblioteca padrão;
-- HTML e CSS gerados no servidor;
+- HTML em template e CSS estático próprio;
 - `urllib.parse` para formulários;
 - sem dependências externas, JavaScript, banco ou autenticação.
 
@@ -37,6 +39,21 @@ Planning, Execution e AI continuam como fontes oficiais das regras de negócio.
 4. `Planner` cria três etapas demonstrativas encadeadas;
 5. `MissionExecutionEngine` executa o plano;
 6. a página mostra missão, plano, provider, resultados e relatório final.
+
+## Navegação operacional
+
+- `/`: dashboard, métricas, ação rápida e timeline;
+- `/workspaces`: listagem, criação e seleção de Workspace;
+- `/missions`: criação, execução, listagem e status;
+- `/memory`: registro, histórico, pesquisa e filtro por categoria;
+- `/executions`: histórico local de execuções;
+- `/doctor`: Application Health e disponibilidade dos serviços, preservando a
+  rota sem representar o Genesis Doctor oficial;
+- `/settings`: limites e configuração da instância local.
+
+A Interface utiliza exclusivamente `WorkspaceApplicationService`,
+`MissionApplicationService` e `MemoryService` por meio da fachada
+`CompanionApplication`. Não chama Engines diretamente nos fluxos operacionais.
 
 ## Plano demonstrativo
 
@@ -73,7 +90,9 @@ Endereço padrão: `http://127.0.0.1:8000/`.
 - conteúdo enviado pelo usuário é escapado antes da renderização;
 - corpo de requisição limitado;
 - nenhuma credencial, provider real ou chamada externa;
-- nenhuma persistência ou histórico entre requisições;
+- histórico volátil durante a vida da instância, sem persistência após restart;
+- Application Health deriva da presença dos três Application Services e exibe
+  `DISPONÍVEL` ou `DEGRADADO`; não executa nem substitui o Genesis Doctor;
 - sem autenticação, concorrência de missões ou atualização em tempo real.
 
 ## Critérios de conclusão
@@ -86,3 +105,8 @@ Endereço padrão: `http://127.0.0.1:8000/`.
 - [x] testes da aplicação e do servidor;
 - [x] servidor inicia e encerra de forma limpa;
 - [x] nenhuma alteração no Core, CLI ou Engines.
+- [x] sidebar e dashboard operacional responsivo;
+- [x] páginas de missões, memórias e execuções;
+- [x] métricas e timeline por Workspace ativo;
+- [x] HTML e CSS em arquivos separados;
+- [x] compatibilidade das rotas e APIs anteriores.

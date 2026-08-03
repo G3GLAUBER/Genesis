@@ -42,6 +42,13 @@ Browser → Companion → Application → Mission → Planning → Execution
                                                        └→ FakeProvider
 ```
 
+O Companion é a primeira Interface operacional: oferece dashboard, Workspaces,
+missões, memórias, execuções e timeline sobre os três Application Services, com
+HTML e CSS próprios e estado exclusivamente volátil.
+
+O indicador Application Health informa somente a disponibilidade local desses
+Services. Ele não executa, representa nem substitui o Genesis Doctor oficial.
+
 Chamadas diretas entre contratos públicos de Engines são permitidas quando um
 Blueprint específico define a composição. O EventBus é usado para comunicação
 desacoplada quando existe um evento semanticamente aprovado; ele não é uma
@@ -103,7 +110,7 @@ implementação nem estabelece antecipadamente seus contratos.
 - Companion local, síncrono e sem autenticação;
 - Workspace mantido em memória e compartilhado pela instância local;
 - execução de missão sequencial, sem retry, retomada ou persistência;
-- Memory isolada por Workspace, mas volátil e sem integração visual;
+- Memory isolada por Workspace, volátil e integrada ao Companion;
 - apenas FakeProvider, sem rede ou credenciais;
 - EventBus síncrono e em memória;
 
