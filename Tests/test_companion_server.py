@@ -6,12 +6,16 @@ from urllib.request import Request, urlopen
 
 import pytest
 
+from Interfaces.Companion import CompanionApplication
 from Interfaces.Companion.server import create_server
 
 
 @pytest.fixture
 def companion_server():
-    server = create_server(port=0)
+    server = create_server(
+        port=0,
+        application=CompanionApplication.default(persistent=False),
+    )
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
     host, port = server.server_address[:2]

@@ -5,12 +5,21 @@ from threading import RLock
 from Core.result import Result
 from Engines.Workspace.engine import WorkspaceEngine
 from Engines.Workspace.models import Workspace, WorkspaceStatus
+from Engines.Workspace.repository import (
+    InMemoryWorkspaceRepository,
+    WorkspaceRepository,
+)
 
 
 class WorkspaceManager:
-    def __init__(self, engine: WorkspaceEngine | None = None) -> None:
+    def __init__(
+        self,
+        engine: WorkspaceEngine | None = None,
+        *,
+        repository: WorkspaceRepository | None = None,
+    ) -> None:
         self._engine = engine or WorkspaceEngine()
-        self._workspaces: dict[str, Workspace] = {}
+        self._repository = repository or InMemoryWorkspaceRepository()
         self._lock = RLock()
 
     def create(
@@ -26,26 +35,37 @@ class WorkspaceManager:
             )
             if not result.is_success:
                 return result
-            if self._name_exists(result.data.name):
-                return Result.error(message="Workspace com este nome já existe")
-            self._workspaces[result.data.id] = result.data
+            try:
+                if self._name_exists(result.data.name):
+                    return Result.error(
+                        message="Workspace com este nome já existe"
+                    )
+                self._repository.store(result.data)
+            except Exception as error:
+                return self._repository_error(error)
             return result
 
     def get(self, workspace_id: str | None) -> Result:
         with self._lock:
-            workspace = self._workspaces.get(workspace_id or "")
+            try:
+                workspace = self._repository.get(workspace_id or "")
+            except Exception as error:
+                return self._repository_error(error)
             if workspace is None:
                 return Result.error(message="Workspace não encontrado")
             return Result.success(message="Workspace encontrado", data=workspace)
 
     def list(self, *, include_archived: bool = False) -> Result:
         with self._lock:
-            workspaces = tuple(
-                workspace
-                for workspace in self._workspaces.values()
-                if include_archived
-                or workspace.status is WorkspaceStatus.ACTIVE
-            )
+            try:
+                workspaces = tuple(
+                    workspace
+                    for workspace in self._repository.list()
+                    if include_archived
+                    or workspace.status is WorkspaceStatus.ACTIVE
+                )
+            except Exception as error:
+                return self._repository_error(error)
             return Result.success(
                 message="Workspaces listados",
                 data=workspaces,
@@ -63,8 +83,16 @@ class WorkspaceManager:
             if not current.is_success:
                 return current
             normalized_name = name.strip() if isinstance(name, str) else name
-            if self._name_exists(normalized_name, exclude_id=current.data.id):
-                return Result.error(message="Workspace com este nome já existe")
+            try:
+                if self._name_exists(
+                    normalized_name,
+                    exclude_id=current.data.id,
+                ):
+                    return Result.error(
+                        message="Workspace com este nome já existe"
+                    )
+            except Exception as error:
+                return self._repository_error(error)
             result = self._engine.rename(workspace=current.data, name=name)
             return self._store_result(result)
 
@@ -102,6 +130,8 @@ class WorkspaceManager:
             return Result.error(message="Busca deve ser um texto não vazio")
         query = name.strip().casefold()
         listed = self.list(include_archived=include_archived)
+        if not listed.is_success:
+            return listed
         matches = tuple(
             workspace
             for workspace in listed.data
@@ -119,7 +149,10 @@ class WorkspaceManager:
 
     def _store_result(self, result: Result) -> Result:
         if result.is_success:
-            self._workspaces[result.data.id] = result.data
+            try:
+                self._repository.store(result.data)
+            except Exception as error:
+                return self._repository_error(error)
         return result
 
     def _name_exists(
@@ -134,5 +167,14 @@ class WorkspaceManager:
         return any(
             workspace.id != exclude_id
             and workspace.name.casefold() == normalized
-            for workspace in self._workspaces.values()
+            for workspace in self._repository.list()
+        )
+
+    @staticmethod
+    def _repository_error(error: Exception) -> Result:
+        return Result.error(
+            message=(
+                "Falha no repository de Workspace: "
+                f"{type(error).__name__}"
+            )
         )

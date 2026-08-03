@@ -92,7 +92,8 @@ Endereço padrão: `http://127.0.0.1:8000/`.
 - conteúdo enviado pelo usuário é escapado antes da renderização;
 - corpo de requisição limitado;
 - nenhuma credencial, provider real ou chamada externa;
-- histórico volátil durante a vida da instância, sem persistência após restart;
+- histórico de missões e execuções volátil durante a vida da instância;
+- Workspaces, Projects e Memories persistem em SQLite no bootstrap padrão;
 - Application Health deriva da presença dos três Application Services e exibe
   `DISPONÍVEL` ou `DEGRADADO`; não executa nem substitui o Genesis Doctor;
 - sem autenticação, concorrência de missões ou atualização em tempo real.

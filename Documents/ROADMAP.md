@@ -1,7 +1,7 @@
 # Gênesis — Roadmap Técnico Oficial
 
 Status: Canônico
-Atualizado na Sprint 0.3.1
+Atualizado na Sprint 0.4
 
 Este documento define sequência e prioridade, não contratos. Cada componente ou
 mudança arquitetural continua sujeito à Constituição, aos ADRs, à Architecture e
@@ -10,11 +10,13 @@ a Blueprint aprovado.
 ## Estado atual
 
 Estão implementados e testados: fundação do Core, CLI/Doctor, AI Provider e AI
-Orchestrator com FakeProvider, Mission, Planning, Execution, Companion local e
-Workspace em memória, coordenados pela Application Layer. A Memory Foundation
-possui contrato oficial e repository volátil. Projects v1 organiza projetos
-reais por Workspace também em memória. Knowledge, Search, persistência, Agents
-e integrações reais ainda não são capacidades implementadas.
+Orchestrator com FakeProvider, Mission, Planning, Execution, Companion local,
+Workspace, Memory Foundation e Projects v1, coordenados pela Application Layer.
+Workspace, Projects e Memory possuem repositories em memória e SQLite; o
+bootstrap da Application permanece em memória por compatibilidade e o Companion
+operacional seleciona SQLite explicitamente. Knowledge, Search, persistência de
+Mission/Plan/Execution, Agents e integrações reais ainda não são capacidades
+implementadas.
 
 ## Genesis 0.3 — Consolidação da fundação
 
@@ -30,9 +32,12 @@ e integrações reais ainda não são capacidades implementadas.
 
 - aprovar o Blueprint de persistência e a evolução persistente de Memory;
 - definir ownership, repositories, transações e migrações;
-- persistir Workspace, Mission, Plan e Execution de forma incremental;
+- persistir Workspace, Projects e Memory localmente;
+- manter Mission, Plan e Execution em memória nesta versão;
 - implementar Memory mínima, testável e independente de Interface;
-- validar restart, integridade e concorrência.
+- [x] fundação SQLite para Workspace, Projects e Memory com migrations;
+- validar restart e integridade;
+- adiar garantias de concorrência para uma Sprint dedicada.
 
 ## Genesis 0.5 — Knowledge e providers reais
 

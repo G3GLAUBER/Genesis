@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 from Application.services import (
     MemoryService,
@@ -19,11 +20,24 @@ from Engines.Projects import (
     ProjectEngine,
     ProjectRepository,
 )
-from Engines.Workspace import WorkspaceEngine, WorkspaceManager
+from Engines.Workspace import (
+    InMemoryWorkspaceRepository,
+    WorkspaceEngine,
+    WorkspaceManager,
+)
+from Infrastructure.Persistence import (
+    SQLiteDatabase,
+    SQLiteMemoryRepository,
+    SQLiteProjectRepository,
+    SQLiteWorkspaceRepository,
+    migrate,
+)
 
 
 @dataclass(frozen=True)
 class ApplicationContainer:
+    persistence_mode: str
+    database: SQLiteDatabase | None
     registry: Registry
     provider: FakeProvider
     ai_orchestrator: AIOrchestrator
@@ -42,7 +56,11 @@ class ApplicationContainer:
     workspace_service: WorkspaceApplicationService
 
 
-def bootstrap_application() -> ApplicationContainer:
+def bootstrap_application(
+    *,
+    persistent: bool = False,
+    database_path: str | Path | None = None,
+) -> ApplicationContainer:
     registry = Registry()
     provider = FakeProvider()
     registry.register(provider.provider_id, provider)
@@ -53,20 +71,37 @@ def bootstrap_application() -> ApplicationContainer:
     mission_engine = MissionEngine()
     planner = Planner()
     execution_engine = MissionExecutionEngine(ai_orchestrator)
-    memory_repository = InMemoryRepository()
+    database = None
+    use_sqlite = persistent or database_path is not None
+    if use_sqlite:
+        database = SQLiteDatabase(database_path or Path("Data/genesis.db"))
+        migrate(database)
+        memory_repository = SQLiteMemoryRepository(database)
+        project_repository = SQLiteProjectRepository(database)
+        workspace_repository = SQLiteWorkspaceRepository(database)
+    else:
+        memory_repository = InMemoryRepository()
+        project_repository = InMemoryProjectRepository()
+        workspace_repository = InMemoryWorkspaceRepository()
     memory_engine = MemoryEngine(memory_repository)
     memory_service = MemoryService(memory_engine)
-    project_repository = InMemoryProjectRepository()
     project_engine = ProjectEngine(project_repository)
     workspace_engine = WorkspaceEngine()
-    workspace_manager = WorkspaceManager(workspace_engine)
-    workspace_service = WorkspaceApplicationService(workspace_manager)
-    initial_workspace = workspace_service.create(
-        name="Workspace principal",
-        description="Workspace inicial do Genesis Companion",
+    workspace_manager = WorkspaceManager(
+        workspace_engine,
+        repository=workspace_repository,
     )
-    if not initial_workspace.is_success:
-        raise RuntimeError("Falha ao criar o Workspace inicial")
+    workspace_service = WorkspaceApplicationService(workspace_manager)
+    existing = workspace_service.list()
+    if existing.data:
+        workspace_service.set_active(existing.data[0].id)
+    else:
+        initial_workspace = workspace_service.create(
+            name="Workspace principal",
+            description="Workspace inicial do Genesis Companion",
+        )
+        if not initial_workspace.is_success:
+            raise RuntimeError("Falha ao criar o Workspace inicial")
     project_service = ProjectService(
         project_engine,
         workspace_service=workspace_service,
@@ -79,6 +114,8 @@ def bootstrap_application() -> ApplicationContainer:
         workspace_service=workspace_service,
     )
     return ApplicationContainer(
+        persistence_mode="sqlite" if use_sqlite else "memory",
+        database=database,
         registry=registry,
         provider=provider,
         ai_orchestrator=ai_orchestrator,

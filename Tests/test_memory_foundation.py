@@ -223,8 +223,8 @@ def test_application_service_delegates_to_memory_engine():
 
 
 def test_bootstrap_exposes_memory_contract_without_global_state():
-    first = bootstrap_application()
-    second = bootstrap_application()
+    first = bootstrap_application(persistent=False)
+    second = bootstrap_application(persistent=False)
 
     stored = store(first.memory_service).data
 

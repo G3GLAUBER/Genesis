@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from Application.bootstrap import bootstrap_application
@@ -40,6 +41,7 @@ class CompanionDashboard:
     available_service_count: int = 0
     service_count: int = 3
     last_activity: datetime | None = None
+    storage_label: str = "Memória local"
 
 
 @dataclass(frozen=True)
@@ -76,6 +78,7 @@ class CompanionApplication:
         self._workspace_service = workspace_service
         self._memory_service = memory_service
         self._project_service = project_service
+        self._persistence_mode = "memory"
         self._mission_service = MissionApplicationService(
             mission_engine,
             planner,
@@ -85,13 +88,22 @@ class CompanionApplication:
         )
 
     @classmethod
-    def default(cls) -> CompanionApplication:
-        container = bootstrap_application()
+    def default(
+        cls,
+        *,
+        persistent: bool = False,
+        database_path: str | Path | None = None,
+    ) -> CompanionApplication:
+        container = bootstrap_application(
+            persistent=persistent,
+            database_path=database_path,
+        )
         application = cls.__new__(cls)
         application._mission_service = container.mission_service
         application._workspace_service = container.workspace_service
         application._memory_service = container.memory_service
         application._project_service = container.project_service
+        application._persistence_mode = container.persistence_mode
         return application
 
     def create_workspace(
@@ -164,6 +176,10 @@ class CompanionApplication:
             service_count=service_count,
             last_activity=(
                 activities[0].occurred_at if activities else None
+            ),
+            storage_label=(
+                "SQLite local" if self._persistence_mode == "sqlite"
+                else "Memória local"
             ),
         )
 

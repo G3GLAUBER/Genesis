@@ -11,12 +11,13 @@ independente de Interfaces, IA e persistência externa.
 
 ```text
 Interface → MemoryService → MemoryEngine → MemoryRepository
-                                             └→ InMemoryRepository
+                                             ├→ InMemoryRepository
+                                             └→ SQLiteMemoryRepository
 ```
 
 `MemoryEngine` contém validação de domínio. `MemoryService` coordena o caso de
 uso sem duplicar regras. O repositório é uma porta substituível; nesta fundação,
-somente a implementação volátil em memória é permitida.
+o adapter em memória e o adapter SQLite implementam o mesmo contrato.
 
 ## Modelos públicos
 
@@ -60,7 +61,7 @@ oficiais e não preservam persistência nem efeitos colaterais antigos.
 
 ## Limites
 
-- sem persistência real, embeddings ou banco vetorial;
+- persistência SQLite local, sem embeddings ou banco vetorial;
 - sem IA, ranking semântico ou integração com Companion;
 - sem paginação, atualização ou expiração;
 - sem estado global;

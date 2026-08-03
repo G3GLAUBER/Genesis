@@ -11,7 +11,8 @@ missões e acompanhar projetos operacionais sem persistência externa.
 
 ```text
 Companion → ProjectService → ProjectEngine → ProjectRepository
-                                             └→ InMemoryProjectRepository
+                                             ├→ InMemoryProjectRepository
+                                             └→ SQLiteProjectRepository
 ```
 
 As regras e os modelos pertencem a `Engines/Projects/`. A camada Application
@@ -29,8 +30,9 @@ o coloca em `ACTIVE`.
 ## Repository
 
 `ProjectRepository` define armazenamento, consulta e listagem. A implementação
-`InMemoryProjectRepository` mantém estado somente na própria instância, preserva
-a ordem de criação e isola listagens por Workspace.
+`InMemoryProjectRepository` mantém estado somente na própria instância. O
+adapter SQLite oficial preserva a mesma ordem, isolamento e integridade de
+Workspace.
 
 ## Engine
 
@@ -56,7 +58,7 @@ incompatível retorna erro controlado.
 
 ## Limites
 
-- sem banco, arquivos ou persistência entre reinícios;
+- SQLite local por padrão e modo em memória explícito;
 - sem login, autorização ou isolamento multiusuário;
 - sem IA, providers, embeddings ou integrações externas;
 - sem exclusão física, edição geral ou transição pública para todos os estados;

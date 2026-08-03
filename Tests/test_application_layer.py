@@ -15,8 +15,8 @@ from Interfaces.Companion import CompanionApplication, CompanionExecution
 
 
 def test_bootstrap_composes_isolated_application_dependencies():
-    first = bootstrap_application()
-    second = bootstrap_application()
+    first = bootstrap_application(persistent=False)
+    second = bootstrap_application(persistent=False)
 
     assert first.registry.get("fake") is first.provider
     assert first.ai_orchestrator.provider_ids == ("fake",)
@@ -32,7 +32,7 @@ def test_bootstrap_composes_isolated_application_dependencies():
 
 
 def test_mission_service_creates_plans_and_executes_mission():
-    container = bootstrap_application()
+    container = bootstrap_application(persistent=False)
 
     result = container.mission_service.execute_mission(
         title="Application Layer",
@@ -48,7 +48,7 @@ def test_mission_service_creates_plans_and_executes_mission():
 
 
 def test_mission_service_optionally_associates_workspace():
-    container = bootstrap_application()
+    container = bootstrap_application(persistent=False)
     workspace = container.workspace_service.create(name="Produto").data
 
     result = container.mission_service.execute_mission(
@@ -63,7 +63,7 @@ def test_mission_service_optionally_associates_workspace():
 
 
 def test_mission_service_supports_legacy_use_without_workspace():
-    container = bootstrap_application()
+    container = bootstrap_application(persistent=False)
     service = MissionApplicationService(
         container.mission_engine,
         container.planner,
@@ -103,7 +103,7 @@ def test_workspace_service_coordinates_crud_active_and_association():
 
 
 def test_application_failures_remain_controlled_results():
-    container = bootstrap_application()
+    container = bootstrap_application(persistent=False)
 
     invalid_mission = container.mission_service.execute_mission(
         title=" ",
@@ -122,7 +122,7 @@ def test_application_failures_remain_controlled_results():
 
 
 def test_application_execution_dto_is_immutable():
-    execution = bootstrap_application().mission_service.execute_mission(
+    execution = bootstrap_application(persistent=False).mission_service.execute_mission(
         title="Imutabilidade",
         objective="Proteger retorno agregado",
     ).data
@@ -132,7 +132,7 @@ def test_application_execution_dto_is_immutable():
 
 
 def test_companion_delegates_to_application_services_and_keeps_alias():
-    application = CompanionApplication.default()
+    application = CompanionApplication.default(persistent=False)
 
     result = application.execute_mission(
         title="Companion",

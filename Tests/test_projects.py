@@ -129,7 +129,7 @@ def test_archived_project_does_not_accept_missions(engine):
 
 
 def test_project_service_reuses_engine_and_validates_workspace():
-    container = bootstrap_application()
+    container = bootstrap_application(persistent=False)
     workspace = container.workspace_service.get_active().data
 
     created = container.project_service.create(
@@ -174,7 +174,7 @@ def test_project_service_coordinates_full_flow():
 
 
 def test_companion_project_api_and_dashboard_preserve_default_flow():
-    application = CompanionApplication.default()
+    application = CompanionApplication.default(persistent=False)
     created = application.create_project(
         title="Projeto Companion",
         client="Cliente",
@@ -189,4 +189,3 @@ def test_companion_project_api_and_dashboard_preserve_default_flow():
     assert dashboard.active_project_count == 1
     assert dashboard.completed_project_count == 0
     assert dashboard.recent_projects == (created.data,)
-

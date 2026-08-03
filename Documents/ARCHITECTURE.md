@@ -44,7 +44,9 @@ Browser → Companion → Application → Mission → Planning → Execution
 
 O Companion é a primeira Interface operacional: oferece dashboard, Workspaces,
 projetos, missões, memórias, execuções e timeline sobre Application Services,
-com HTML e CSS próprios e estado exclusivamente volátil.
+com HTML e CSS próprios. Workspaces, Projects e Memories usam SQLite local no
+bootstrap operacional do Companion; o bootstrap de Application permanece em
+memória por compatibilidade. Missões, planos e execuções permanecem voláteis.
 
 O indicador Application Health informa somente a disponibilidade local desses
 Services. Ele não executa, representa nem substitui o Genesis Doctor oficial.
@@ -86,9 +88,9 @@ Orchestrator, Event, EventBus, Dispatcher, Logger e Lifecycle.
 
 Capacidades internas especializadas. Atualmente há implementações funcionais de
 AI, Mission, Planning, Execution, Workspace, Projects e Memory Foundation.
-Projects e Memory possuem repositories voláteis em memória, sem persistência.
-Memory também não possui embeddings ou IA. Knowledge, Search, Storage e
-AIRouter são estruturas vazias ou planejadas.
+Workspace, Projects e Memory possuem contracts de repository com adapters em
+memória e SQLite. Memory não possui embeddings ou IA. Knowledge, Search, Storage
+e AIRouter são estruturas vazias ou planejadas.
 
 ### Agents
 
@@ -102,17 +104,17 @@ Blueprints nem decisões arquiteturais.
 
 ## Conceitos planejados, não implementados
 
-Persistência, Services de infraestrutura e Storage dependem de Blueprint e
-review arquitetural antes da criação. A menção no Roadmap não autoriza sua
-implementação nem estabelece antecipadamente seus contratos.
+Persistência de Mission, Plan e Execution, Services de infraestrutura adicionais
+e Storage dependem de Blueprint e review arquitetural antes da criação.
 
 ## Restrições atuais conhecidas
 
 - Companion local, síncrono e sem autenticação;
-- Workspace mantido em memória e compartilhado pela instância local;
+- bootstrap da Application em memória, isolado por chamada e sem arquivos;
+- Workspace, Projects e Memory persistidos em SQLite local quando o modo
+  persistente é solicitado; o Companion operacional solicita esse modo;
 - execução de missão sequencial, sem retry, retomada ou persistência;
-- Memory isolada por Workspace, volátil e integrada ao Companion;
-- Projects isolado por Workspace, volátil e integrado ao Companion;
+- Memory e Projects isolados por Workspace e integrados ao Companion;
 - apenas FakeProvider, sem rede ou credenciais;
 - EventBus síncrono e em memória;
 

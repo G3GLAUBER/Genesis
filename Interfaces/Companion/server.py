@@ -21,7 +21,7 @@ def create_server(
     *,
     application: CompanionApplication | None = None,
 ) -> ThreadingHTTPServer:
-    app = application or CompanionApplication.default()
+    app = application or CompanionApplication.default(persistent=True)
     config = Configuration.default()
 
     class CompanionHandler(BaseHTTPRequestHandler):

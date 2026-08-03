@@ -17,7 +17,7 @@ fica na camada `Application/`.
 ```text
 Companion → Application Services → WorkspaceManager → WorkspaceEngine
                        ↓                         ↓
-                 MissionEngine          coleção em memória
+                 MissionEngine          WorkspaceRepository
 ```
 
 O Core e a CLI não conhecem Workspace. O Engine depende somente do contrato
@@ -56,8 +56,8 @@ jamais modificam o objeto recebido.
 
 ### WorkspaceManager
 
-Mantém a coleção em memória e é a fonte oficial de verdade durante a vida da
-aplicação:
+Coordena a coleção por `WorkspaceRepository`. A implementação em memória segue
+disponível e o bootstrap persistente usa o adapter SQLite oficial:
 
 ```python
 manager.create(name=name, description=description)
@@ -96,7 +96,7 @@ Listagem e busca omitem arquivados por padrão e preservam a ordem de criação.
 
 ## Limites da versão
 
-- persistência somente em memória;
+- persistência SQLite local por padrão; modo em memória explícito disponível;
 - sem banco, arquivos, login, IA adicional ou atualização em tempo real;
 - sem alteração de Core, CLI, AI, Mission, Planning ou Execution;
 - sem migração de missões criadas fora do Companion;

@@ -179,6 +179,7 @@ def _render_dashboard(
         ),
         ("Saúde dos Serviços", dashboard.application_health, "health"),
         ("Última atividade", last_activity, "activity"),
+        ("Armazenamento", dashboard.storage_label, "storage"),
     )
     cards = "".join(
         f'<article class="metric-card {css}"><span>{escape(label)}</span>'

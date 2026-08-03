@@ -40,7 +40,7 @@ def test_previous_public_constructor_executes_without_workspace():
 
 
 def test_companion_creates_plans_and_executes_mission():
-    result = CompanionApplication.default().execute_mission(
+    result = CompanionApplication.default(persistent=False).execute_mission(
         title="Criar uma renda adicional",
         objective="Aumentar a renda mensal em mil euros",
     )
@@ -56,7 +56,7 @@ def test_companion_creates_plans_and_executes_mission():
 
 
 def test_companion_uses_fake_provider_for_every_step():
-    result = CompanionApplication.default().execute_mission(
+    result = CompanionApplication.default(persistent=False).execute_mission(
         title="Missão",
         objective="Executar demonstração",
     )
@@ -72,7 +72,7 @@ def test_companion_uses_fake_provider_for_every_step():
 
 
 def test_companion_rejects_invalid_form_data():
-    result = CompanionApplication.default().execute_mission(
+    result = CompanionApplication.default(persistent=False).execute_mission(
         title=" ",
         objective="Objetivo",
     )
@@ -82,7 +82,7 @@ def test_companion_rejects_invalid_form_data():
 
 
 def test_companion_execution_is_immutable():
-    result = CompanionApplication.default().execute_mission(
+    result = CompanionApplication.default(persistent=False).execute_mission(
         title="Missão",
         objective="Objetivo",
     )
@@ -92,7 +92,7 @@ def test_companion_execution_is_immutable():
 
 
 def test_companion_lists_creates_and_opens_workspaces():
-    application = CompanionApplication.default()
+    application = CompanionApplication.default(persistent=False)
 
     created = application.create_workspace(
         name="Novo Produto",
@@ -107,7 +107,7 @@ def test_companion_lists_creates_and_opens_workspaces():
 
 
 def test_companion_dashboard_counts_workspaces_and_missions():
-    application = CompanionApplication.default()
+    application = CompanionApplication.default(persistent=False)
     workspace = application.create_workspace(name="Produto").data
     execution = application.execute_mission(
         title="Entregar Workspace",
@@ -125,7 +125,7 @@ def test_companion_dashboard_counts_workspaces_and_missions():
 
 
 def test_companion_complete_workspace_mission_flow():
-    application = CompanionApplication.default()
+    application = CompanionApplication.default(persistent=False)
     workspace = application.create_workspace(name="Sprint Workspace").data
 
     execution = application.execute_mission(
@@ -142,7 +142,7 @@ def test_companion_complete_workspace_mission_flow():
 
 
 def test_operational_dashboard_tracks_missions_memory_and_executions():
-    application = CompanionApplication.default()
+    application = CompanionApplication.default(persistent=False)
     workspace = application.dashboard().active_workspace
     execution = application.execute_mission(
         title="Dashboard operacional",
@@ -177,7 +177,7 @@ def test_operational_dashboard_tracks_missions_memory_and_executions():
 
 
 def test_companion_lists_operational_data_only_for_active_workspace():
-    application = CompanionApplication.default()
+    application = CompanionApplication.default(persistent=False)
     first = application.dashboard().active_workspace
     application.execute_mission(
         title="Primeiro Workspace",

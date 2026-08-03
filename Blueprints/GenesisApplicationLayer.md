@@ -27,8 +27,8 @@ entrada e saída; Engines permanecem como fontes oficiais das regras de domínio
   pelo contrato público do Memory Engine;
 - `ProjectService`: coordena criação, consulta, listagem, arquivamento,
   restauração e associação de missões pelo contrato de Projects;
-- `bootstrap_application()`: compõe Registry, FakeProvider, Engines, Manager e
-  serviços em uma instância isolada;
+- `bootstrap_application()`: compõe Registry, FakeProvider, Engines, repositories
+  e serviços; preserva memória por padrão e permite SQLite explicitamente;
 - modelos imutáveis de aplicação existem apenas para resultados agregados que
   não pertencem a um único domínio.
 
@@ -40,7 +40,7 @@ de uso para a camada Application.
 
 ## Limites
 
-- sem regras de domínio, persistência real ou estado global;
+- sem regras de domínio, queries SQL ou estado global;
 - sem provider real ou framework de injeção de dependência;
 - sem alterações em Core ou CLI;
 - sem mudanças nas APIs públicas dos Engines.
