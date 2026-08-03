@@ -41,6 +41,9 @@ def create_server(
             if path == "/workspaces":
                 self._respond(HTTPStatus.OK, self._render("workspaces"))
                 return
+            if path == "/projects":
+                self._respond(HTTPStatus.OK, self._render("projects"))
+                return
             if path.startswith("/workspaces/"):
                 workspace_id = unquote(path.removeprefix("/workspaces/"))
                 result = app.open_workspace(workspace_id)
@@ -81,7 +84,12 @@ def create_server(
 
         def do_POST(self) -> None:
             path = urlsplit(self.path).path
-            if path not in ("/missions", "/workspaces", "/memory"):
+            if path not in (
+                "/missions",
+                "/workspaces",
+                "/projects",
+                "/memory",
+            ):
                 self._respond(HTTPStatus.NOT_FOUND, "Página não encontrada")
                 return
 
@@ -101,6 +109,25 @@ def create_server(
 
             body = self.rfile.read(length).decode("utf-8", errors="replace")
             fields = parse_qs(body, keep_blank_values=True)
+            if path == "/projects":
+                result = app.create_project(
+                    workspace_id=_first(fields, "workspace_id"),
+                    title=_first(fields, "title"),
+                    client=_first(fields, "client"),
+                    address=_first(fields, "address"),
+                    description=_first(fields, "description"),
+                )
+                status = (
+                    HTTPStatus.OK
+                    if result.is_success
+                    else HTTPStatus.BAD_REQUEST
+                )
+                self._respond(
+                    status,
+                    self._render("projects", result=result),
+                )
+                return
+
             if path == "/workspaces":
                 result = app.create_workspace(
                     name=_first(fields, "name"),
@@ -190,6 +217,8 @@ def create_server(
             )
             missions = app.list_missions(workspace_id=workspace_id).data
             executions = app.list_executions(workspace_id=workspace_id).data
+            project_result = app.list_projects(workspace_id=workspace_id)
+            projects = project_result.data if project_result.is_success else ()
             if page == "memory" and (query or category):
                 memory_result = app.search_memories(
                     workspace_id=workspace_id,
@@ -209,6 +238,7 @@ def create_server(
                 dashboard=dashboard,
                 page=page,
                 workspaces=app.list_workspaces().data,
+                projects=projects,
                 workspace=workspace,
                 missions=missions,
                 memories=memories,

@@ -19,6 +19,7 @@ _ROOT = Path(__file__).resolve().parent
 _PAGE_TITLES = {
     "dashboard": "Dashboard",
     "workspaces": "Workspaces",
+    "projects": "Projetos",
     "missions": "Missões",
     "memory": "Memórias",
     "executions": "Execuções",
@@ -34,6 +35,7 @@ def render_page(
     dashboard: CompanionDashboard | None = None,
     page: str = "dashboard",
     workspaces: tuple[Any, ...] = (),
+    projects: tuple[Any, ...] = (),
     workspace: Any | None = None,
     missions: tuple[Any, ...] = (),
     memories: tuple[Any, ...] = (),
@@ -48,6 +50,7 @@ def render_page(
         result=result,
         dashboard=dashboard,
         workspaces=workspaces,
+        projects=projects,
         workspace=workspace,
         missions=missions,
         memories=memories,
@@ -90,6 +93,12 @@ def _page_content(**context) -> str:
             context["result"],
             context["dashboard"],
         )
+    if page == "projects":
+        return _render_projects(
+            context["projects"],
+            context["result"],
+            context["dashboard"],
+        )
     if page == "memory":
         return _render_memory(
             context["memories"],
@@ -115,6 +124,7 @@ def _render_sidebar(active_page: str) -> str:
     items = (
         ("dashboard", "/", "◈", "Dashboard"),
         ("workspaces", "/workspaces", "▦", "Workspaces"),
+        ("projects", "/projects", "▤", "Projetos"),
         ("missions", "/missions", "◎", "Missões"),
         ("memory", "/memory", "◇", "Memórias"),
         ("executions", "/executions", "▶", "Execuções"),
@@ -132,6 +142,7 @@ def _page_subtitle(page: str) -> str:
     subtitles = {
         "dashboard": "Visão operacional do seu Genesis local",
         "workspaces": "Organize missões e memórias por contexto",
+        "projects": "Organize obras, clientes e missões reais",
         "missions": "Crie, planeje e execute objetivos",
         "memory": "Consulte o conhecimento operacional do Workspace",
         "executions": "Acompanhe resultados e providers",
@@ -160,6 +171,12 @@ def _render_dashboard(
         ("Missões", str(dashboard.mission_count), "missions"),
         ("Memórias", str(dashboard.memory_count), "memory"),
         ("Execuções", str(dashboard.execution_count), "executions"),
+        ("Projetos ativos", str(dashboard.active_project_count), "projects"),
+        (
+            "Projetos concluídos",
+            str(dashboard.completed_project_count),
+            "projects-completed",
+        ),
         ("Saúde dos Serviços", dashboard.application_health, "health"),
         ("Última atividade", last_activity, "activity"),
     )
@@ -183,7 +200,59 @@ def _render_dashboard(
       <h2>Timeline</h2></div><a href="/executions">Ver execuções</a></div>
     {_render_timeline(timeline)}
   </article>
-</section>{result_content}"""
+</section>{_render_recent_projects(dashboard.recent_projects)}{result_content}"""
+
+
+def _render_recent_projects(projects: tuple[Any, ...]) -> str:
+    cards = "".join(_project_card(project) for project in projects)
+    cards = cards or _empty_state("Nenhum projeto neste Workspace.")
+    return f"""<section class="panel">
+  <div class="panel-heading"><div><span class="eyebrow">Portfólio</span>
+    <h2>Últimos projetos</h2></div><a href="/projects">Ver projetos</a></div>
+  <div class="card-list">{cards}</div>
+</section>"""
+
+
+def _render_projects(
+    projects: tuple[Any, ...],
+    result: Result | None,
+    dashboard: CompanionDashboard | None,
+) -> str:
+    active = dashboard.active_workspace if dashboard else None
+    workspace_id = active.id if active else ""
+    cards = "".join(_project_card(project) for project in reversed(projects))
+    cards = cards or _empty_state("Nenhum projeto neste Workspace.")
+    return f"""<section class="split-grid projects-layout">
+  <article class="panel"><span class="eyebrow">Nova obra</span>
+    <h2>Criar projeto</h2>{_render_feedback(result)}
+    <form method="post" action="/projects" class="stack-form">
+      <input type="hidden" name="workspace_id" value="{escape(workspace_id)}">
+      <label for="project-title">Título</label>
+      <input id="project-title" name="title" required maxlength="160">
+      <label for="project-client">Cliente</label>
+      <input id="project-client" name="client" required maxlength="160">
+      <label for="project-address">Morada</label>
+      <input id="project-address" name="address" required maxlength="240">
+      <label for="project-description">Descrição</label>
+      <textarea id="project-description" name="description" maxlength="2000"></textarea>
+      <button type="submit">Criar projeto <span>→</span></button>
+    </form>
+  </article>
+  <article class="panel"><span class="eyebrow">Workspace</span>
+    <h2>{escape(active.name if active else 'Nenhum')}</h2>
+    <div class="card-list">{cards}</div>
+  </article>
+</section>"""
+
+
+def _project_card(project: Any) -> str:
+    return f"""<article class="data-card project-card">
+  <div><span class="pill">{escape(project.status.value.upper())}</span>
+    <h3>{escape(project.title)}</h3>
+    <p>{escape(project.client)} · {escape(project.address)}</p>
+    <small>{len(project.mission_ids)} missão(ões)</small></div>
+  <time>{project.created_at.astimezone().strftime('%d/%m · %H:%M')}</time>
+</article>"""
 
 
 def _mission_form(active: Any | None) -> str:

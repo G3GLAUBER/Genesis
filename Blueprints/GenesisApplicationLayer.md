@@ -25,6 +25,8 @@ entrada e saída; Engines permanecem como fontes oficiais das regras de domínio
   arquivamento, restauração, seleção ativa e associação de missões;
 - `MemoryService`: coordena armazenamento, busca, histórico, exclusão e limpeza
   pelo contrato público do Memory Engine;
+- `ProjectService`: coordena criação, consulta, listagem, arquivamento,
+  restauração e associação de missões pelo contrato de Projects;
 - `bootstrap_application()`: compõe Registry, FakeProvider, Engines, Manager e
   serviços em uma instância isolada;
 - modelos imutáveis de aplicação existem apenas para resultados agregados que

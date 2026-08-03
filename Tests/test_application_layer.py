@@ -25,7 +25,10 @@ def test_bootstrap_composes_isolated_application_dependencies():
     assert first.mission_service._execution_engine is first.execution_engine
     assert first.workspace_service._manager is first.workspace_manager
     assert first.workspace_manager._engine is first.workspace_engine
+    assert first.project_service._engine is first.project_engine
+    assert first.project_engine._repository is first.project_repository
     assert first.workspace_manager is not second.workspace_manager
+    assert first.project_repository is not second.project_repository
 
 
 def test_mission_service_creates_plans_and_executes_mission():

@@ -139,6 +139,7 @@ def test_http_flow_creates_opens_workspace_and_associates_mission(
     (
         ("/", "Visão operacional"),
         ("/workspaces", "Workspaces ativos"),
+        ("/projects", "Criar projeto"),
         ("/missions", "Criar missão"),
         ("/memory", "Nova memória"),
         ("/executions", "Nenhuma execução registrada"),
@@ -154,6 +155,7 @@ def test_operational_pages_are_available(companion_server, path, expected):
     assert expected in content
     assert "Dashboard" in content
     assert "Memórias" in content
+    assert "Projetos" in content
     assert "Saúde dos Serviços" in content
 
 
@@ -228,3 +230,50 @@ def test_application_health_is_distinct_from_genesis_doctor(companion_server):
     assert "SAUDÁVEL" not in content
     assert "Health Score" not in content
     assert "Este indicador não substitui o Genesis Doctor." in content
+
+
+def test_http_project_flow_creates_lists_and_updates_dashboard(companion_server):
+    payload = urlencode(
+        {
+            "title": "Empresa Remodelações",
+            "client": "Cliente HTTP",
+            "address": "Rua da Obra, 10",
+            "description": "Remodelação integral",
+        }
+    ).encode()
+    request = Request(
+        f"{companion_server}/projects",
+        data=payload,
+        method="POST",
+    )
+
+    with urlopen(request, timeout=2) as response:
+        created = response.read().decode("utf-8")
+    with urlopen(f"{companion_server}/projects", timeout=2) as response:
+        listed = response.read().decode("utf-8")
+    with urlopen(f"{companion_server}/", timeout=2) as response:
+        dashboard = response.read().decode("utf-8")
+
+    assert "Projeto criado" in created
+    assert "Empresa Remodelações" in created
+    assert "Cliente HTTP" in listed
+    assert "Projetos ativos" in dashboard
+    assert "Projetos concluídos" in dashboard
+    assert "Últimos projetos" in dashboard
+    assert "Empresa Remodelações" in dashboard
+
+
+def test_http_project_validation_returns_bad_request(companion_server):
+    payload = urlencode(
+        {"title": "", "client": "Cliente", "address": "Morada"}
+    ).encode()
+    request = Request(
+        f"{companion_server}/projects",
+        data=payload,
+        method="POST",
+    )
+
+    with pytest.raises(HTTPError) as error:
+        urlopen(request, timeout=2)
+
+    assert error.value.code == HTTPStatus.BAD_REQUEST

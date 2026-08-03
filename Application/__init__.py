@@ -3,6 +3,7 @@ from Application.models import MissionApplicationExecution
 from Application.services import (
     MemoryService,
     MissionApplicationService,
+    ProjectService,
     WorkspaceApplicationService,
 )
 
@@ -12,6 +13,7 @@ __all__ = [
     "MemoryService",
     "MissionApplicationExecution",
     "MissionApplicationService",
+    "ProjectService",
     "WorkspaceApplicationService",
     "bootstrap_application",
 ]

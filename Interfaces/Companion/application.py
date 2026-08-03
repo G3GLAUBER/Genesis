@@ -9,6 +9,7 @@ from Application.models import MissionApplicationExecution
 from Application.services import (
     MemoryService,
     MissionApplicationService,
+    ProjectService,
     WorkspaceApplicationService,
 )
 from Core.result import Result
@@ -18,6 +19,7 @@ if TYPE_CHECKING:
     from Engines.Execution import MissionExecutionEngine
     from Engines.Mission import MissionEngine
     from Engines.Planning import Planner
+    from Engines.Projects import Project
     from Engines.Workspace import Workspace, WorkspaceManager
 
 
@@ -31,6 +33,9 @@ class CompanionDashboard:
     mission_count: int
     memory_count: int = 0
     execution_count: int = 0
+    active_project_count: int = 0
+    completed_project_count: int = 0
+    recent_projects: tuple[Project, ...] = ()
     application_health: str = "DEGRADADO"
     available_service_count: int = 0
     service_count: int = 3
@@ -56,6 +61,7 @@ class CompanionApplication:
         workspace_manager: WorkspaceManager | None = None,
         active_workspace_id: str | None = None,
         memory_service: MemoryService | None = None,
+        project_service: ProjectService | None = None,
     ) -> None:
         workspace_service = (
             WorkspaceApplicationService(
@@ -69,6 +75,7 @@ class CompanionApplication:
         )
         self._workspace_service = workspace_service
         self._memory_service = memory_service
+        self._project_service = project_service
         self._mission_service = MissionApplicationService(
             mission_engine,
             planner,
@@ -84,6 +91,7 @@ class CompanionApplication:
         application._mission_service = container.mission_service
         application._workspace_service = container.workspace_service
         application._memory_service = container.memory_service
+        application._project_service = container.project_service
         return application
 
     def create_workspace(
@@ -120,6 +128,8 @@ class CompanionApplication:
         ).data
         memories = self.list_memories(workspace_id=workspace_id)
         memory_records = memories.data if memories.is_success else ()
+        projects = self.list_projects(workspace_id=workspace_id)
+        project_records = projects.data if projects.is_success else ()
         activities = self.timeline(workspace_id=workspace_id)
         available_service_count = sum(
             service is not None
@@ -136,6 +146,15 @@ class CompanionApplication:
             mission_count=len(missions),
             memory_count=len(memory_records),
             execution_count=len(executions),
+            active_project_count=sum(
+                project.status.value in ("planning", "active", "on_hold")
+                for project in project_records
+            ),
+            completed_project_count=sum(
+                project.status.value == "completed"
+                for project in project_records
+            ),
+            recent_projects=tuple(reversed(project_records))[:3],
             application_health=(
                 "DISPONÍVEL"
                 if available_service_count == service_count
@@ -159,6 +178,68 @@ class CompanionApplication:
             title=title,
             objective=objective,
             workspace_id=workspace_id,
+        )
+
+    def create_project(
+        self,
+        *,
+        title: str | None,
+        client: str | None,
+        address: str | None,
+        description: str | None = "",
+        workspace_id: str | None = None,
+    ) -> Result:
+        if self._project_service is None:
+            return Result.error(message="ProjectService não está disponível")
+        selected_id = workspace_id or self._workspace_service.active_workspace_id
+        return self._project_service.create(
+            workspace_id=selected_id,
+            title=title,
+            client=client,
+            address=address,
+            description=description,
+        )
+
+    def list_projects(
+        self,
+        *,
+        workspace_id: str | None = None,
+        include_archived: bool = False,
+    ) -> Result:
+        if self._project_service is None:
+            return Result.error(message="ProjectService não está disponível")
+        selected_id = workspace_id or self._workspace_service.active_workspace_id
+        return self._project_service.list(
+            workspace_id=selected_id,
+            include_archived=include_archived,
+        )
+
+    def get_project(self, project_id: str | None) -> Result:
+        if self._project_service is None:
+            return Result.error(message="ProjectService não está disponível")
+        return self._project_service.get(project_id)
+
+    def archive_project(self, project_id: str | None) -> Result:
+        if self._project_service is None:
+            return Result.error(message="ProjectService não está disponível")
+        return self._project_service.archive(project_id)
+
+    def restore_project(self, project_id: str | None) -> Result:
+        if self._project_service is None:
+            return Result.error(message="ProjectService não está disponível")
+        return self._project_service.restore(project_id)
+
+    def attach_project_mission(
+        self,
+        project_id: str | None,
+        *,
+        mission_id: str | None,
+    ) -> Result:
+        if self._project_service is None:
+            return Result.error(message="ProjectService não está disponível")
+        return self._project_service.attach_mission(
+            project_id,
+            mission_id=mission_id,
         )
 
     def list_missions(self, *, workspace_id: str | None = None) -> Result:

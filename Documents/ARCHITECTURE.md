@@ -43,8 +43,8 @@ Browser → Companion → Application → Mission → Planning → Execution
 ```
 
 O Companion é a primeira Interface operacional: oferece dashboard, Workspaces,
-missões, memórias, execuções e timeline sobre os três Application Services, com
-HTML e CSS próprios e estado exclusivamente volátil.
+projetos, missões, memórias, execuções e timeline sobre Application Services,
+com HTML e CSS próprios e estado exclusivamente volátil.
 
 O indicador Application Health informa somente a disponibilidade local desses
 Services. Ele não executa, representa nem substitui o Genesis Doctor oficial.
@@ -85,9 +85,10 @@ Orchestrator, Event, EventBus, Dispatcher, Logger e Lifecycle.
 ### Engines
 
 Capacidades internas especializadas. Atualmente há implementações funcionais de
-AI, Mission, Planning, Execution, Workspace e Memory Foundation. Memory possui
-contrato oficial e repository volátil em memória, sem persistência, embeddings
-ou IA. Knowledge, Search, Storage e AIRouter são estruturas vazias ou planejadas.
+AI, Mission, Planning, Execution, Workspace, Projects e Memory Foundation.
+Projects e Memory possuem repositories voláteis em memória, sem persistência.
+Memory também não possui embeddings ou IA. Knowledge, Search, Storage e
+AIRouter são estruturas vazias ou planejadas.
 
 ### Agents
 
@@ -111,6 +112,7 @@ implementação nem estabelece antecipadamente seus contratos.
 - Workspace mantido em memória e compartilhado pela instância local;
 - execução de missão sequencial, sem retry, retomada ou persistência;
 - Memory isolada por Workspace, volátil e integrada ao Companion;
+- Projects isolado por Workspace, volátil e integrado ao Companion;
 - apenas FakeProvider, sem rede ou credenciais;
 - EventBus síncrono e em memória;
 

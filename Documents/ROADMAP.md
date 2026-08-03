@@ -12,8 +12,9 @@ a Blueprint aprovado.
 Estão implementados e testados: fundação do Core, CLI/Doctor, AI Provider e AI
 Orchestrator com FakeProvider, Mission, Planning, Execution, Companion local e
 Workspace em memória, coordenados pela Application Layer. A Memory Foundation
-possui contrato oficial e repository volátil. Knowledge, Search, persistência,
-Agents e integrações reais ainda não são capacidades implementadas.
+possui contrato oficial e repository volátil. Projects v1 organiza projetos
+reais por Workspace também em memória. Knowledge, Search, persistência, Agents
+e integrações reais ainda não são capacidades implementadas.
 
 ## Genesis 0.3 — Consolidação da fundação
 
@@ -21,6 +22,7 @@ Agents e integrações reais ainda não são capacidades implementadas.
 - 0.3.2: introduzir Application Layer e bootstrap centralizado;
 - 0.3.3: estabelecer o contrato oficial da Memory Foundation em memória;
 - 0.3.4: tornar o Companion a primeira Interface operacional do Genesis;
+- 0.3.5: introduzir Projects v1 para obras e projetos reais por Workspace;
 - padronizar contratos básicos, tempo e eventos sem quebrar APIs;
 - instituir verificações arquiteturais, typing, lint e cobertura.
 

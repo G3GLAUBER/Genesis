@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from Application.services import (
     MemoryService,
     MissionApplicationService,
+    ProjectService,
     WorkspaceApplicationService,
 )
 from Core.registry import Registry
@@ -13,6 +14,11 @@ from Engines.Execution import MissionExecutionEngine
 from Engines.Memory import InMemoryRepository, MemoryEngine, MemoryRepository
 from Engines.Mission import MissionEngine
 from Engines.Planning import Planner
+from Engines.Projects import (
+    InMemoryProjectRepository,
+    ProjectEngine,
+    ProjectRepository,
+)
 from Engines.Workspace import WorkspaceEngine, WorkspaceManager
 
 
@@ -26,10 +32,13 @@ class ApplicationContainer:
     execution_engine: MissionExecutionEngine
     memory_repository: MemoryRepository
     memory_engine: MemoryEngine
+    project_repository: ProjectRepository
+    project_engine: ProjectEngine
     workspace_engine: WorkspaceEngine
     workspace_manager: WorkspaceManager
     mission_service: MissionApplicationService
     memory_service: MemoryService
+    project_service: ProjectService
     workspace_service: WorkspaceApplicationService
 
 
@@ -47,6 +56,8 @@ def bootstrap_application() -> ApplicationContainer:
     memory_repository = InMemoryRepository()
     memory_engine = MemoryEngine(memory_repository)
     memory_service = MemoryService(memory_engine)
+    project_repository = InMemoryProjectRepository()
+    project_engine = ProjectEngine(project_repository)
     workspace_engine = WorkspaceEngine()
     workspace_manager = WorkspaceManager(workspace_engine)
     workspace_service = WorkspaceApplicationService(workspace_manager)
@@ -56,6 +67,10 @@ def bootstrap_application() -> ApplicationContainer:
     )
     if not initial_workspace.is_success:
         raise RuntimeError("Falha ao criar o Workspace inicial")
+    project_service = ProjectService(
+        project_engine,
+        workspace_service=workspace_service,
+    )
     mission_service = MissionApplicationService(
         mission_engine,
         planner,
@@ -72,9 +87,12 @@ def bootstrap_application() -> ApplicationContainer:
         execution_engine=execution_engine,
         memory_repository=memory_repository,
         memory_engine=memory_engine,
+        project_repository=project_repository,
+        project_engine=project_engine,
         workspace_engine=workspace_engine,
         workspace_manager=workspace_manager,
         mission_service=mission_service,
         memory_service=memory_service,
+        project_service=project_service,
         workspace_service=workspace_service,
     )

@@ -5,7 +5,8 @@
 ## Objetivo
 
 Oferecer a primeira interface operacional local do Genesis para acompanhar
-Workspaces, missões, memórias, execuções, timeline e saúde da aplicação.
+Workspaces, projetos, missões, memórias, execuções, timeline e saúde da
+aplicação.
 
 ## Arquitetura
 
@@ -44,6 +45,7 @@ Planning, Execution e AI continuam como fontes oficiais das regras de negócio.
 
 - `/`: dashboard, métricas, ação rápida e timeline;
 - `/workspaces`: listagem, criação e seleção de Workspace;
+- `/projects`: listagem e criação de projetos do Workspace ativo;
 - `/missions`: criação, execução, listagem e status;
 - `/memory`: registro, histórico, pesquisa e filtro por categoria;
 - `/executions`: histórico local de execuções;
@@ -52,7 +54,7 @@ Planning, Execution e AI continuam como fontes oficiais das regras de negócio.
 - `/settings`: limites e configuração da instância local.
 
 A Interface utiliza exclusivamente `WorkspaceApplicationService`,
-`MissionApplicationService` e `MemoryService` por meio da fachada
+`ProjectService`, `MissionApplicationService` e `MemoryService` por meio da fachada
 `CompanionApplication`. Não chama Engines diretamente nos fluxos operacionais.
 
 ## Plano demonstrativo
@@ -107,6 +109,7 @@ Endereço padrão: `http://127.0.0.1:8000/`.
 - [x] nenhuma alteração no Core, CLI ou Engines.
 - [x] sidebar e dashboard operacional responsivo;
 - [x] páginas de missões, memórias e execuções;
+- [x] página e métricas operacionais de projetos;
 - [x] métricas e timeline por Workspace ativo;
 - [x] HTML e CSS em arquivos separados;
 - [x] compatibilidade das rotas e APIs anteriores.
