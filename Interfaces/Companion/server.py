@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 
 from Core.configuration import Configuration
 from Interfaces.Companion.application import CompanionApplication
@@ -26,13 +26,49 @@ def create_server(
 
     class CompanionHandler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:
-            if urlsplit(self.path).path != "/":
-                self._respond(HTTPStatus.NOT_FOUND, "Página não encontrada")
+            path = urlsplit(self.path).path
+            if path == "/":
+                self._respond(
+                    HTTPStatus.OK,
+                    render_page(config, dashboard=app.dashboard()),
+                )
                 return
-            self._respond(HTTPStatus.OK, render_page(config))
+            if path == "/workspaces":
+                self._respond(
+                    HTTPStatus.OK,
+                    render_page(
+                        config,
+                        dashboard=app.dashboard(),
+                        page="workspaces",
+                        workspaces=app.list_workspaces().data,
+                    ),
+                )
+                return
+            if path.startswith("/workspaces/"):
+                workspace_id = unquote(path.removeprefix("/workspaces/"))
+                result = app.open_workspace(workspace_id)
+                status = (
+                    HTTPStatus.OK
+                    if result.is_success
+                    else HTTPStatus.NOT_FOUND
+                )
+                self._respond(
+                    status,
+                    render_page(
+                        config,
+                        None if result.is_success else result,
+                        dashboard=app.dashboard(),
+                        page="workspaces",
+                        workspaces=app.list_workspaces().data,
+                        workspace=result.data if result.is_success else None,
+                    ),
+                )
+                return
+            self._respond(HTTPStatus.NOT_FOUND, "Página não encontrada")
 
         def do_POST(self) -> None:
-            if urlsplit(self.path).path != "/missions":
+            path = urlsplit(self.path).path
+            if path not in ("/missions", "/workspaces"):
                 self._respond(HTTPStatus.NOT_FOUND, "Página não encontrada")
                 return
 
@@ -52,12 +88,39 @@ def create_server(
 
             body = self.rfile.read(length).decode("utf-8", errors="replace")
             fields = parse_qs(body, keep_blank_values=True)
+            if path == "/workspaces":
+                result = app.create_workspace(
+                    name=_first(fields, "name"),
+                    description=_first(fields, "description"),
+                )
+                status = (
+                    HTTPStatus.OK
+                    if result.is_success
+                    else HTTPStatus.BAD_REQUEST
+                )
+                self._respond(
+                    status,
+                    render_page(
+                        config,
+                        result,
+                        dashboard=app.dashboard(),
+                        page="workspaces",
+                        workspaces=app.list_workspaces().data,
+                        workspace=result.data if result.is_success else None,
+                    ),
+                )
+                return
+
             result = app.execute_mission(
                 title=_first(fields, "title"),
                 objective=_first(fields, "objective"),
+                workspace_id=_first(fields, "workspace_id"),
             )
             status = HTTPStatus.OK if result.is_success else HTTPStatus.BAD_REQUEST
-            self._respond(status, render_page(config, result))
+            self._respond(
+                status,
+                render_page(config, result, dashboard=app.dashboard()),
+            )
 
         def log_message(self, format: str, *args: object) -> None:
             return

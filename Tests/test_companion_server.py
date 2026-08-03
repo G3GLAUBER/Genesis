@@ -78,3 +78,57 @@ def test_unknown_route_returns_not_found(companion_server):
         urlopen(f"{companion_server}/missing", timeout=2)
 
     assert error.value.code == HTTPStatus.NOT_FOUND
+
+
+def test_workspace_page_lists_default_workspace(companion_server):
+    with urlopen(f"{companion_server}/workspaces", timeout=2) as response:
+        content = response.read().decode("utf-8")
+
+    assert response.status == HTTPStatus.OK
+    assert "Workspaces ativos" in content
+    assert "Workspace principal" in content
+    assert 'action="/workspaces"' in content
+
+
+def test_http_flow_creates_opens_workspace_and_associates_mission(
+    companion_server,
+):
+    create_payload = urlencode(
+        {"name": "Workspace HTTP", "description": "Integração"}
+    ).encode()
+    create_request = Request(
+        f"{companion_server}/workspaces",
+        data=create_payload,
+        method="POST",
+    )
+    with urlopen(create_request, timeout=2) as response:
+        created_content = response.read().decode("utf-8")
+
+    workspace_path = created_content.split(
+        'href="/workspaces/',
+    )[-1].split('"', 1)[0]
+    mission_payload = urlencode(
+        {
+            "title": "Missão no Workspace",
+            "objective": "Validar associação HTTP",
+            "workspace_id": workspace_path,
+        }
+    ).encode()
+    mission_request = Request(
+        f"{companion_server}/missions",
+        data=mission_payload,
+        method="POST",
+    )
+    with urlopen(mission_request, timeout=2) as response:
+        mission_content = response.read().decode("utf-8")
+    with urlopen(
+        f"{companion_server}/workspaces/{workspace_path}",
+        timeout=2,
+    ) as response:
+        workspace_content = response.read().decode("utf-8")
+
+    assert "Workspace HTTP" in created_content
+    assert "Workspace:\n    Workspace HTTP" in mission_content
+    assert "Missão no Workspace" in mission_content
+    assert "Workspace aberto" in workspace_content
+    assert "Nenhuma missão associada" not in workspace_content
