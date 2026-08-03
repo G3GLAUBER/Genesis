@@ -11,21 +11,21 @@ a Blueprint aprovado.
 
 Estão implementados e testados: fundação do Core, CLI/Doctor, AI Provider e AI
 Orchestrator com FakeProvider, Mission, Planning, Execution, Companion local e
-Workspace em memória, coordenados pela Application Layer. Memory é experimental;
-Knowledge, Search, persistência, Agents e integrações reais ainda não são
-capacidades implementadas.
+Workspace em memória, coordenados pela Application Layer. A Memory Foundation
+possui contrato oficial e repository volátil. Knowledge, Search, persistência,
+Agents e integrações reais ainda não são capacidades implementadas.
 
 ## Genesis 0.3 — Consolidação da fundação
 
 - 0.3.1: estabelecer autoridade documental e fontes canônicas;
 - 0.3.2: introduzir Application Layer e bootstrap centralizado;
-- decidir o destino do protótipo Memory antes de evoluí-lo;
+- 0.3.3: estabelecer o contrato oficial da Memory Foundation em memória;
 - padronizar contratos básicos, tempo e eventos sem quebrar APIs;
 - instituir verificações arquiteturais, typing, lint e cobertura.
 
 ## Genesis 0.4 — Persistência e Memory
 
-- aprovar Blueprints de persistência e Memory;
+- aprovar o Blueprint de persistência e a evolução persistente de Memory;
 - definir ownership, repositories, transações e migrações;
 - persistir Workspace, Mission, Plan e Execution de forma incremental;
 - implementar Memory mínima, testável e independente de Interface;

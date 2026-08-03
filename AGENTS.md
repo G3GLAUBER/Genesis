@@ -66,9 +66,10 @@ Componentes existentes do Core:
 aprovadas para uso. Não simule sua existência nem antecipe abstrações sem
 Blueprint e review arquitetural. `Core/Orchestrator/router.py` e
 `Core/Orchestrator/session.py` estão vazios. `Engines/` contém componentes
-funcionais de AI, Mission, Planning, Execution e Workspace, além de estruturas
-vazias ou experimentais. `Application/` coordena casos de uso e a composição
-das dependências para Interfaces. `Agents/` permanece inicial.
+funcionais de AI, Mission, Planning, Execution, Workspace e Memory Foundation,
+além de estruturas vazias ou experimentais. `Application/` coordena casos de
+uso e a composição das dependências para Interfaces. `Agents/` permanece
+inicial.
 
 ## Responsabilidades por área
 

@@ -78,9 +78,9 @@ Orchestrator, Event, EventBus, Dispatcher, Logger e Lifecycle.
 ### Engines
 
 Capacidades internas especializadas. Atualmente há implementações funcionais de
-AI, Mission, Planning, Execution e Workspace. Memory é experimental e não deve
-ser considerado funcional até possuir Blueprint e testes. Knowledge, Search,
-Storage e AIRouter são estruturas vazias ou planejadas.
+AI, Mission, Planning, Execution, Workspace e Memory Foundation. Memory possui
+contrato oficial e repository volátil em memória, sem persistência, embeddings
+ou IA. Knowledge, Search, Storage e AIRouter são estruturas vazias ou planejadas.
 
 ### Agents
 
@@ -103,9 +103,9 @@ implementação nem estabelece antecipadamente seus contratos.
 - Companion local, síncrono e sem autenticação;
 - Workspace mantido em memória e compartilhado pela instância local;
 - execução de missão sequencial, sem retry, retomada ou persistência;
+- Memory isolada por Workspace, mas volátil e sem integração visual;
 - apenas FakeProvider, sem rede ou credenciais;
 - EventBus síncrono e em memória;
-- Memory experimental e fora dos contratos oficiais.
 
 ## Fluxo de evolução
 

@@ -3,12 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from Application.services import (
+    MemoryService,
     MissionApplicationService,
     WorkspaceApplicationService,
 )
 from Core.registry import Registry
 from Engines.AI import AIOrchestrator, FakeProvider
 from Engines.Execution import MissionExecutionEngine
+from Engines.Memory import InMemoryRepository, MemoryEngine, MemoryRepository
 from Engines.Mission import MissionEngine
 from Engines.Planning import Planner
 from Engines.Workspace import WorkspaceEngine, WorkspaceManager
@@ -22,9 +24,12 @@ class ApplicationContainer:
     mission_engine: MissionEngine
     planner: Planner
     execution_engine: MissionExecutionEngine
+    memory_repository: MemoryRepository
+    memory_engine: MemoryEngine
     workspace_engine: WorkspaceEngine
     workspace_manager: WorkspaceManager
     mission_service: MissionApplicationService
+    memory_service: MemoryService
     workspace_service: WorkspaceApplicationService
 
 
@@ -39,6 +44,9 @@ def bootstrap_application() -> ApplicationContainer:
     mission_engine = MissionEngine()
     planner = Planner()
     execution_engine = MissionExecutionEngine(ai_orchestrator)
+    memory_repository = InMemoryRepository()
+    memory_engine = MemoryEngine(memory_repository)
+    memory_service = MemoryService(memory_engine)
     workspace_engine = WorkspaceEngine()
     workspace_manager = WorkspaceManager(workspace_engine)
     workspace_service = WorkspaceApplicationService(workspace_manager)
@@ -62,8 +70,11 @@ def bootstrap_application() -> ApplicationContainer:
         mission_engine=mission_engine,
         planner=planner,
         execution_engine=execution_engine,
+        memory_repository=memory_repository,
+        memory_engine=memory_engine,
         workspace_engine=workspace_engine,
         workspace_manager=workspace_manager,
         mission_service=mission_service,
+        memory_service=memory_service,
         workspace_service=workspace_service,
     )
