@@ -8,6 +8,7 @@ from urllib.parse import parse_qs, unquote, urlsplit
 from Core.configuration import Configuration
 from Interfaces.Companion.application import CompanionApplication
 from Interfaces.Companion.views import render_page, stylesheet
+from Engines.Intelligence import RoutingMode
 
 
 DEFAULT_HOST = "127.0.0.1"
@@ -43,6 +44,9 @@ def create_server(
                 return
             if path == "/projects":
                 self._respond(HTTPStatus.OK, self._render("projects"))
+                return
+            if path == "/intelligence":
+                self._respond(HTTPStatus.OK, self._render("intelligence"))
                 return
             if path.startswith("/workspaces/"):
                 workspace_id = unquote(path.removeprefix("/workspaces/"))
@@ -84,12 +88,18 @@ def create_server(
 
         def do_POST(self) -> None:
             path = urlsplit(self.path).path
+            is_handoff_completion = (
+                path.startswith("/intelligence/handoffs/")
+                and path.endswith("/complete")
+            )
             if path not in (
                 "/missions",
                 "/workspaces",
                 "/projects",
                 "/memory",
-            ):
+                "/intelligence/route",
+                "/intelligence/handoffs",
+            ) and not is_handoff_completion:
                 self._respond(HTTPStatus.NOT_FOUND, "Página não encontrada")
                 return
 
@@ -109,6 +119,60 @@ def create_server(
 
             body = self.rfile.read(length).decode("utf-8", errors="replace")
             fields = parse_qs(body, keep_blank_values=True)
+            if path == "/intelligence/route":
+                try:
+                    mode = RoutingMode(
+                        _first(fields, "routing_mode") or "free_only"
+                    )
+                except ValueError:
+                    self._respond(
+                        HTTPStatus.BAD_REQUEST,
+                        self._render(
+                            "intelligence",
+                            result=Result.error(
+                                message="RoutingMode inválido"
+                            ),
+                        ),
+                    )
+                    return
+                result = app.route_intelligence(
+                    prompt=_first(fields, "prompt"),
+                    capability=_first(fields, "capability"),
+                    mode=mode,
+                )
+                self._respond(
+                    HTTPStatus.OK if result.is_success else HTTPStatus.BAD_REQUEST,
+                    self._render("intelligence", result=result),
+                )
+                return
+
+            if path == "/intelligence/handoffs":
+                result = app.create_manual_handoff(
+                    provider_id=_first(fields, "provider_id"),
+                    prompt=_first(fields, "prompt"),
+                    workspace_id=_first(fields, "workspace_id"),
+                    project_id=_first(fields, "project_id"),
+                )
+                self._respond(
+                    HTTPStatus.OK if result.is_success else HTTPStatus.BAD_REQUEST,
+                    self._render("intelligence", result=result),
+                )
+                return
+
+            if is_handoff_completion:
+                handoff_id = path.removeprefix(
+                    "/intelligence/handoffs/"
+                ).removesuffix("/complete")
+                result = app.complete_manual_handoff(
+                    unquote(handoff_id),
+                    response=_first(fields, "response"),
+                    save_as_memory=_first(fields, "save_as_memory") == "on",
+                )
+                self._respond(
+                    HTTPStatus.OK if result.is_success else HTTPStatus.BAD_REQUEST,
+                    self._render("intelligence", result=result),
+                )
+                return
             if path == "/projects":
                 result = app.create_project(
                     workspace_id=_first(fields, "workspace_id"),
@@ -232,6 +296,14 @@ def create_server(
                 if memory_result.is_success
                 else ()
             )
+            profiles_result = app.list_provider_profiles()
+            profiles = (
+                profiles_result.data if profiles_result.is_success else ()
+            )
+            handoffs_result = app.list_manual_handoffs()
+            handoffs = (
+                handoffs_result.data if handoffs_result.is_success else ()
+            )
             return render_page(
                 config,
                 result,
@@ -246,6 +318,8 @@ def create_server(
                 timeline=app.timeline(workspace_id=workspace_id),
                 query=query,
                 category=category,
+                provider_profiles=profiles,
+                manual_handoffs=handoffs,
             )
 
     return ThreadingHTTPServer((host, port), CompanionHandler)

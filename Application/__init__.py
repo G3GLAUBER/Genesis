@@ -1,6 +1,7 @@
 from Application.bootstrap import ApplicationContainer, bootstrap_application
 from Application.models import MissionApplicationExecution
 from Application.services import (
+    IntelligenceApplicationService,
     MemoryService,
     MissionApplicationService,
     ProjectService,
@@ -10,6 +11,7 @@ from Application.services import (
 
 __all__ = [
     "ApplicationContainer",
+    "IntelligenceApplicationService",
     "MemoryService",
     "MissionApplicationExecution",
     "MissionApplicationService",

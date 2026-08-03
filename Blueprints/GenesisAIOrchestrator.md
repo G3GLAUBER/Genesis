@@ -68,6 +68,10 @@ orchestrator = AIOrchestrator(
 result = orchestrator.generate(request)
 ```
 
+O método aditivo `generate_with_order(request, provider_ids)` reutiliza o mesmo
+pipeline de execução para uma ordem produzida pelo Intelligence Router. Ele não
+altera a ordem configurada nem a compatibilidade de `generate(request)`.
+
 `generate()` deve:
 
 1. receber um `AIRequest`;

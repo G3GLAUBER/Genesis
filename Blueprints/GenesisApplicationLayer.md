@@ -27,6 +27,8 @@ entrada e saída; Engines permanecem como fontes oficiais das regras de domínio
   pelo contrato público do Memory Engine;
 - `ProjectService`: coordena criação, consulta, listagem, arquivamento,
   restauração e associação de missões pelo contrato de Projects;
+- `IntelligenceApplicationService`: coordena catálogo, roteamento, handoffs,
+  execução automática pelo AIOrchestrator e integração opcional com Memory;
 - `bootstrap_application()`: compõe Registry, FakeProvider, Engines, repositories
   e serviços; preserva memória por padrão e permite SQLite explicitamente;
 - modelos imutáveis de aplicação existem apenas para resultados agregados que

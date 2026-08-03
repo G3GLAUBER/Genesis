@@ -12,6 +12,8 @@ a Blueprint aprovado.
 Estão implementados e testados: fundação do Core, CLI/Doctor, AI Provider e AI
 Orchestrator com FakeProvider, Mission, Planning, Execution, Companion local,
 Workspace, Memory Foundation e Projects v1, coordenados pela Application Layer.
+O Intelligence Engine v0.1 adiciona roteamento Free First determinístico e
+handoff manual sem acesso externo.
 Workspace, Projects e Memory possuem repositories em memória e SQLite; o
 bootstrap da Application permanece em memória por compatibilidade e o Companion
 operacional seleciona SQLite explicitamente. Knowledge, Search, persistência de
@@ -41,6 +43,7 @@ implementadas.
 
 ## Genesis 0.5 — Knowledge e providers reais
 
+- [x] estabelecer Intelligence Router Free First e Manual Handoff;
 - aprovar e implementar Knowledge Engine;
 - introduzir proveniência, versionamento e busca textual;
 - implementar um primeiro adapter real atrás de `AIProvider`;

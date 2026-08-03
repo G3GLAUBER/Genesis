@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime
 from html import escape
 from pathlib import Path
 from string import Template
@@ -26,6 +25,7 @@ _PAGE_TITLES = {
     "executions": "Execuções",
     "doctor": "Application Health",
     "settings": "Configurações",
+    "intelligence": "Intelligence",
 }
 
 
@@ -44,6 +44,8 @@ def render_page(
     timeline: tuple[CompanionActivity, ...] = (),
     query: str = "",
     category: str = "",
+    provider_profiles: tuple[Any, ...] = (),
+    manual_handoffs: tuple[Any, ...] = (),
 ) -> str:
     title = _PAGE_TITLES.get(page, "Dashboard")
     content = _page_content(
@@ -59,6 +61,8 @@ def render_page(
         timeline=timeline,
         query=query,
         category=category,
+        provider_profiles=provider_profiles,
+        manual_handoffs=manual_handoffs,
     )
     template = Template(
         (_ROOT / "templates" / "layout.html").read_text(encoding="utf-8")
@@ -70,7 +74,8 @@ def render_page(
         environment=escape(config.environment),
         active_workspace=escape(_active_workspace_name(dashboard)),
         storage_mode=escape(_storage_mode(dashboard)),
-        current_time=datetime.now().astimezone().strftime("%H:%M"),
+        services_available=_services_available(dashboard),
+        health_class=_health_class(dashboard),
         sidebar=_render_sidebar(page),
         page_title=escape(title),
         page_subtitle=_page_subtitle(page),
@@ -117,6 +122,14 @@ def _page_content(**context) -> str:
         return _render_doctor(context["dashboard"])
     if page == "settings":
         return _render_settings()
+    if page == "intelligence":
+        return _render_intelligence(
+            context["provider_profiles"],
+            context["manual_handoffs"],
+            context["result"],
+            context["dashboard"],
+            context["projects"],
+        )
     return _render_dashboard(
         context["dashboard"],
         context["timeline"],
@@ -132,19 +145,20 @@ def _render_sidebar(active_page: str) -> str:
         ("missions", "/missions", "missions", "Missões"),
         ("memory", "/memory", "memory", "Memórias"),
         ("executions", "/executions", "executions", "Execuções"),
-        (
-            "doctor",
-            "/doctor",
-            "health",
-            "Application Health<small>Saúde dos Serviços</small>",
-        ),
+        ("intelligence", "/intelligence", "intelligence", "Intelligence"),
+        ("doctor", "/doctor", "health", "Saúde dos Serviços"),
         ("settings", "/settings", "settings", "Configurações"),
     )
     return "".join(
         f'<a class="nav-item{" active" if key == active_page else ""}" '
-        f'href="{href}">{_icon(icon)}<span>{label}</span></a>'
+        f'href="{href}"{_aria_current(key, active_page)}>'
+        f'{_icon(icon)}<span>{label}</span></a>'
         for key, href, icon, label in items
     )
+
+
+def _aria_current(item: str, active_page: str) -> str:
+    return ' aria-current="page"' if item == active_page else ""
 
 
 def _icon(name: str) -> str:
@@ -155,6 +169,7 @@ def _icon(name: str) -> str:
         "missions": '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="m15 9 5-5"/>',
         "memory": '<path d="M8 4h8a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3zM9 9h6M9 13h6"/>',
         "executions": '<path d="m9 7 8 5-8 5z"/><circle cx="12" cy="12" r="10"/>',
+        "intelligence": '<path d="M12 3a6 6 0 0 0-3 11.2V18h6v-3.8A6 6 0 0 0 12 3zM9 21h6M12 3V1M4.2 5.2 2.8 3.8M19.8 5.2l1.4-1.4"/>',
         "health": '<path d="M3 12h4l2-5 4 10 2-5h6"/>',
         "settings": '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
         "storage": '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7"/>',
@@ -177,6 +192,18 @@ def _storage_mode(dashboard: CompanionDashboard | None) -> str:
     return dashboard.storage_label if dashboard else "Indisponível"
 
 
+def _services_available(dashboard: CompanionDashboard | None) -> str:
+    if dashboard is None:
+        return "0/3"
+    return f"{dashboard.available_service_count}/{dashboard.service_count}"
+
+
+def _health_class(dashboard: CompanionDashboard | None) -> str:
+    if dashboard and dashboard.application_health == "DISPONÍVEL":
+        return "service-dot available"
+    return "service-dot degraded"
+
+
 def _page_subtitle(page: str) -> str:
     subtitles = {
         "dashboard": "Visão operacional do seu Genesis local",
@@ -187,6 +214,7 @@ def _page_subtitle(page: str) -> str:
         "executions": "Acompanhe resultados e providers",
         "doctor": "Disponibilidade local dos Application Services",
         "settings": "Preferências da instância local",
+        "intelligence": "Roteamento explicável com recursos gratuitos primeiro",
     }
     return escape(subtitles.get(page, "Genesis Companion"))
 
@@ -231,29 +259,41 @@ def _render_dashboard(
     )
     feedback = _render_feedback(result)
     result_content = _render_mission_result(result) if result else ""
-    return f"""<section class="metric-grid">{cards}</section>
+    return f"""<section class="dashboard-actions" aria-label="Ações rápidas">
+  <div><span class="eyebrow">Workspace atual</span><strong>{escape(active_name)}</strong></div>
+  <nav><a class="quick-link" href="/workspaces">+ Workspace</a>
+    <a class="quick-link" href="/projects">+ Projeto</a>
+    <a class="quick-link" href="/memory">+ Memória</a>
+    <a class="primary-action" href="#new-mission">Nova missão</a></nav>
+</section>
+<section class="metric-grid" aria-label="Resumo operacional">{cards}</section>
 <section class="dashboard-grid">
-  <article class="panel">
-    <div class="panel-heading"><div><span class="eyebrow">Ação rápida</span>
+  <article class="panel mission-composer" id="new-mission">
+    <div class="panel-heading"><div><span class="eyebrow">Executar agora</span>
       <h2>Nova missão</h2></div><span class="status-dot">Local</span></div>
     {feedback}
     {_mission_form(active)}
   </article>
-  <article class="panel">
-    <div class="panel-heading"><div><span class="eyebrow">Atividade</span>
-      <h2>Timeline</h2></div><a href="/executions">Ver execuções</a></div>
+  <aside class="panel activity-panel">
+    <div class="panel-heading"><div><span class="eyebrow">Timeline</span>
+      <h2>Últimas atividades</h2></div><a href="/executions">Ver execuções</a></div>
     {_render_timeline(timeline)}
-  </article>
+  </aside>
 </section>{_render_recent_projects(dashboard.recent_projects)}{result_content}"""
 
 
 def _render_recent_projects(projects: tuple[Any, ...]) -> str:
-    cards = "".join(_project_card(project) for project in projects)
-    cards = cards or _empty_state("Nenhum projeto neste Workspace.")
-    return f"""<section class="panel">
+    rows = "".join(_project_row(project) for project in projects)
+    rows = rows or (
+        '<tr class="table-empty"><td colspan="4">'
+        "Nenhum projeto recente neste Workspace.</td></tr>"
+    )
+    return f"""<section class="panel recent-projects">
   <div class="panel-heading"><div><span class="eyebrow">Portfólio</span>
     <h2>Últimos projetos</h2></div><a href="/projects">Ver projetos</a></div>
-  <div class="card-list">{cards}</div>
+  <div class="table-scroll"><table class="projects-table compact-table">
+    <thead><tr><th>Projeto</th><th>Cliente</th><th>Status</th><th>Criado</th></tr></thead>
+    <tbody>{rows}</tbody></table></div>
 </section>"""
 
 
@@ -277,14 +317,14 @@ def _render_projects(
     <h2>Criar projeto</h2>{_render_feedback(result)}
     <form method="post" action="/projects" class="stack-form">
       <input type="hidden" name="workspace_id" value="{escape(workspace_id)}">
-      <label for="project-title">Título</label>
-      <input id="project-title" name="title" required maxlength="160">
-      <label for="project-client">Cliente</label>
-      <input id="project-client" name="client" required maxlength="160">
-      <label for="project-address">Morada</label>
-      <input id="project-address" name="address" required maxlength="240">
-      <label for="project-description">Descrição</label>
-      <textarea id="project-description" name="description" maxlength="2000"></textarea>
+      <div class="field"><label for="project-title">Título</label>
+        <input id="project-title" name="title" required maxlength="160"></div>
+      <div class="field"><label for="project-client">Cliente</label>
+        <input id="project-client" name="client" required maxlength="160"></div>
+      <div class="field form-span"><label for="project-address">Morada</label>
+        <input id="project-address" name="address" required maxlength="240"></div>
+      <div class="field form-span"><label for="project-description">Descrição</label>
+        <textarea id="project-description" name="description" maxlength="2000"></textarea></div>
       <button type="submit">Criar projeto <span>→</span></button>
     </form>
   </article>
@@ -321,14 +361,14 @@ def _mission_form(active: Any | None) -> str:
         if active is not None
         else ""
     )
-    return f"""<form method="post" action="/missions" class="stack-form">
+    return f"""<form method="post" action="/missions" class="stack-form mission-form">
   {workspace_field}
-  <label for="title">Título</label>
-  <input id="title" name="title" required maxlength="160"
-    placeholder="O que você quer realizar?">
-  <label for="objective">Objetivo</label>
-  <textarea id="objective" name="objective" required maxlength="2000"
-    placeholder="Descreva o resultado esperado"></textarea>
+  <div class="field"><label for="title">Título</label>
+    <input id="title" name="title" required maxlength="160"
+      placeholder="O que você quer realizar?"></div>
+  <div class="field"><label for="objective">Objetivo</label>
+    <textarea id="objective" name="objective" required maxlength="2000"
+      placeholder="Descreva o resultado esperado"></textarea></div>
   <button type="submit">Criar e executar missão <span>→</span></button>
 </form>"""
 
@@ -391,12 +431,12 @@ def _render_memory(
     <h2>Nova memória</h2>{_render_feedback(result)}
     <form method="post" action="/memory" class="stack-form">
       <input type="hidden" name="workspace_id" value="{escape(workspace_id)}">
-      <label for="memory-category">Categoria</label>
-      <input id="memory-category" name="category" required placeholder="decisão">
-      <label for="memory-title">Título</label>
-      <input id="memory-title" name="title" required>
-      <label for="memory-content">Conteúdo</label>
-      <textarea id="memory-content" name="content" required></textarea>
+      <div class="field"><label for="memory-category">Categoria</label>
+        <input id="memory-category" name="category" required placeholder="decisão"></div>
+      <div class="field"><label for="memory-title">Título</label>
+        <input id="memory-title" name="title" required></div>
+      <div class="field form-span"><label for="memory-content">Conteúdo</label>
+        <textarea id="memory-content" name="content" required></textarea></div>
       <button type="submit">Registrar memória <span>→</span></button>
     </form>
   </article>
@@ -458,6 +498,151 @@ def _render_settings() -> str:
     return """<section class="panel"><span class="eyebrow">Instância local</span>
   <h2>Configurações</h2><p class="muted">Configuração persistente, providers
   reais e autenticação permanecem fora do escopo desta versão.</p></section>"""
+
+
+def _render_intelligence(
+    profiles: tuple[Any, ...],
+    handoffs: tuple[Any, ...],
+    result: Result | None,
+    dashboard: CompanionDashboard | None,
+    projects: tuple[Any, ...],
+) -> str:
+    active = dashboard.active_workspace if dashboard else None
+    decision = (
+        result.data
+        if result is not None
+        and result.is_success
+        and hasattr(result.data, "selected_provider_id")
+        else None
+    )
+    profile_rows = "".join(_provider_profile_row(item) for item in profiles)
+    profile_rows = profile_rows or (
+        '<tr class="table-empty"><td colspan="5">'
+        "Nenhum provider configurado.</td></tr>"
+    )
+    handoff_cards = "".join(
+        _manual_handoff_card(item) for item in reversed(handoffs)
+    ) or _empty_state("Nenhum handoff manual criado.")
+    recommendation = _routing_recommendation(decision, active, projects)
+    return f"""<section class="intelligence-hero panel">
+  <div><span class="eyebrow">Free First</span><h2>Intelligence Router</h2>
+    <p>Recomendações configuradas, sem acessar serviços externos.</p></div>
+  <span class="status-dot">Padrão · Somente gratuito</span>
+</section>
+<section class="split-grid intelligence-layout">
+  <article class="panel"><span class="eyebrow">Novo pedido</span>
+    <h2>Encontrar provider</h2>{_render_feedback(result)}
+    <form method="post" action="/intelligence/route"
+      class="stack-form intelligence-form">
+      <div class="field form-span"><label for="intelligence-prompt">Pedido</label>
+        <textarea id="intelligence-prompt" name="prompt" required
+          placeholder="Descreva o resultado que precisa"></textarea></div>
+      <div class="field"><label for="intelligence-capability">Capability</label>
+        <select id="intelligence-capability" name="capability">
+          <option value="general_assistance">Assistência geral</option>
+          <option value="text_generation">Geração de texto</option>
+          <option value="code_generation">Programação</option>
+        </select></div>
+      <div class="field"><label for="routing-mode">Modo</label>
+        <select id="routing-mode" name="routing_mode">
+          <option value="free_only">Somente gratuito</option>
+          <option value="local_first">Local primeiro</option>
+          <option value="economy">Economia</option>
+          <option value="balanced">Balanceado</option>
+          <option value="max_quality">Máxima qualidade</option>
+        </select></div>
+      <button type="submit">Recomendar provider <span>→</span></button>
+    </form>
+  </article>{recommendation}
+</section>
+<section class="panel intelligence-providers">
+  <div class="panel-heading"><div><span class="eyebrow">Configuração local</span>
+    <h2>Providers cadastrados</h2></div>
+    <small>Disponibilidade configurada, não verificada externamente</small></div>
+  <div class="table-scroll"><table class="projects-table provider-table">
+    <thead><tr><th>Provider</th><th>Acesso</th><th>Custo</th>
+      <th>Capabilities</th><th>Estado</th></tr></thead>
+    <tbody>{profile_rows}</tbody></table></div>
+</section>
+<section class="panel handoff-list">
+  <div class="panel-heading"><div><span class="eyebrow">Fluxo manual</span>
+    <h2>Manual Handoffs</h2></div>
+    <small>Sem automação, scraping ou login</small></div>
+  <div class="card-list">{handoff_cards}</div>
+</section>"""
+
+
+def _provider_profile_row(profile: Any) -> str:
+    state = "HABILITADO" if profile.enabled else "DESABILITADO"
+    css_class = "success" if profile.enabled else ""
+    return f"""<tr><td><strong>{escape(profile.display_name)}</strong>
+      <small>{escape(profile.provider_id)}</small></td>
+      <td>{escape(profile.access_mode.value.upper())}</td>
+      <td>{escape(profile.cost_tier.value.upper())}</td>
+      <td>{escape(', '.join(profile.capabilities))}</td>
+      <td><span class="pill {css_class}">{state}</span></td></tr>"""
+
+
+def _routing_recommendation(
+    decision: Any | None,
+    active: Any | None,
+    projects: tuple[Any, ...],
+) -> str:
+    if decision is None:
+        return f"""<aside class="panel recommendation-empty">
+          {_empty_state('Envie um pedido para receber uma recomendação explicável.')}
+        </aside>"""
+    alternatives = ", ".join(decision.alternatives) or "Nenhuma"
+    handoff_form = ""
+    if decision.requires_manual_handoff:
+        project_options = '<option value="">Sem projeto</option>' + "".join(
+            f'<option value="{escape(item.id)}">{escape(item.title)}</option>'
+            for item in projects
+        )
+        workspace_field = (
+            f'<input type="hidden" name="workspace_id" value="{escape(active.id)}">'
+            if active else ""
+        )
+        handoff_form = f"""<form method="post"
+          action="/intelligence/handoffs" class="stack-form handoff-create-form">
+          {workspace_field}<input type="hidden" name="provider_id"
+            value="{escape(decision.selected_provider_id)}">
+          <div class="field form-span"><label for="handoff-prompt">Prompt para copiar</label>
+            <textarea id="handoff-prompt" name="prompt"
+              required>{escape(decision.prompt)}</textarea></div>
+          <div class="field form-span"><label for="handoff-project">Associar ao Projeto</label>
+            <select id="handoff-project" name="project_id">{project_options}</select></div>
+          <button type="submit">Criar handoff manual</button></form>"""
+    return f"""<aside class="panel recommendation-card">
+      <span class="eyebrow">Provider recomendado</span>
+      <h2>{escape(decision.selected_provider_id)}</h2>
+      <p>{escape(decision.reason)}</p>
+      <dl><div><dt>Acesso</dt><dd>{escape(decision.access_mode.value.upper())}</dd></div>
+        <div><dt>Modo</dt><dd>{escape(decision.routing_mode.value.upper())}</dd></div>
+        <div><dt>Alternativas</dt><dd>{escape(alternatives)}</dd></div></dl>
+      {handoff_form}</aside>"""
+
+
+def _manual_handoff_card(handoff: Any) -> str:
+    completed = handoff.status.value == "completed"
+    response = (
+        f'<p class="handoff-response">{escape(handoff.response)}</p>'
+        if completed and handoff.response else ""
+    )
+    form = "" if completed else f"""<form method="post"
+      action="/intelligence/handoffs/{escape(handoff.id)}/complete"
+      class="handoff-complete-form">
+      <label for="response-{escape(handoff.id)}">Resposta manual</label>
+      <textarea id="response-{escape(handoff.id)}" name="response" required
+        placeholder="Cole aqui a resposta obtida manualmente"></textarea>
+      <label class="checkbox"><input type="checkbox" name="save_as_memory">
+        Salvar também como Memory</label>
+      <button type="submit">Concluir handoff</button></form>"""
+    css_class = "success" if completed else ""
+    return f"""<article class="data-card handoff-card"><div>
+      <span class="pill {css_class}">{escape(handoff.status.value.upper())}</span>
+      <h3>{escape(handoff.provider_id)}</h3><p>{escape(handoff.prompt)}</p>
+      {response}{form}</div></article>"""
 
 
 def _render_timeline(activities: tuple[CompanionActivity, ...]) -> str:

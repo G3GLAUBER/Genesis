@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from Application.services import (
+    IntelligenceApplicationService,
     MemoryService,
     MissionApplicationService,
     ProjectService,
@@ -13,6 +14,15 @@ from Core.registry import Registry
 from Engines.AI import AIOrchestrator, FakeProvider
 from Engines.Execution import MissionExecutionEngine
 from Engines.Memory import InMemoryRepository, MemoryEngine, MemoryRepository
+from Engines.Intelligence import (
+    AccessMode,
+    CostTier,
+    IntelligenceMetrics,
+    IntelligenceRouter,
+    ManualHandoffManager,
+    ProviderCatalog,
+    ProviderProfile,
+)
 from Engines.Mission import MissionEngine
 from Engines.Planning import Planner
 from Engines.Projects import (
@@ -54,6 +64,11 @@ class ApplicationContainer:
     memory_service: MemoryService
     project_service: ProjectService
     workspace_service: WorkspaceApplicationService
+    provider_catalog: ProviderCatalog | None = None
+    intelligence_router: IntelligenceRouter | None = None
+    manual_handoffs: ManualHandoffManager | None = None
+    intelligence_metrics: IntelligenceMetrics | None = None
+    intelligence_service: IntelligenceApplicationService | None = None
 
 
 def bootstrap_application(
@@ -113,6 +128,24 @@ def bootstrap_application(
         provider_id=provider.provider_id,
         workspace_service=workspace_service,
     )
+    provider_catalog = ProviderCatalog()
+    for profile in _initial_provider_profiles():
+        registered = provider_catalog.register(profile)
+        if not registered.is_success:
+            raise RuntimeError("Falha ao configurar ProviderProfile inicial")
+    intelligence_router = IntelligenceRouter(provider_catalog)
+    manual_handoffs = ManualHandoffManager()
+    intelligence_metrics = IntelligenceMetrics()
+    intelligence_service = IntelligenceApplicationService(
+        provider_catalog,
+        intelligence_router,
+        manual_handoffs,
+        intelligence_metrics,
+        orchestrator=ai_orchestrator,
+        memory_service=memory_service,
+        workspace_service=workspace_service,
+        project_service=project_service,
+    )
     return ApplicationContainer(
         persistence_mode="sqlite" if use_sqlite else "memory",
         database=database,
@@ -122,6 +155,10 @@ def bootstrap_application(
         mission_engine=mission_engine,
         planner=planner,
         execution_engine=execution_engine,
+        provider_catalog=provider_catalog,
+        intelligence_router=intelligence_router,
+        manual_handoffs=manual_handoffs,
+        intelligence_metrics=intelligence_metrics,
         memory_repository=memory_repository,
         memory_engine=memory_engine,
         project_repository=project_repository,
@@ -129,7 +166,73 @@ def bootstrap_application(
         workspace_engine=workspace_engine,
         workspace_manager=workspace_manager,
         mission_service=mission_service,
+        intelligence_service=intelligence_service,
         memory_service=memory_service,
         project_service=project_service,
         workspace_service=workspace_service,
+    )
+
+
+def _initial_provider_profiles() -> tuple[ProviderProfile, ...]:
+    return (
+        ProviderProfile(
+            provider_id="manual-general",
+            display_name="Manual General Provider",
+            capabilities=("general_assistance", "text_generation"),
+            access_mode=AccessMode.MANUAL,
+            cost_tier=CostTier.FREE,
+            enabled=True,
+            priority=20,
+            notes="Disponibilidade depende de ação manual do usuário.",
+        ),
+        ProviderProfile(
+            provider_id="manual-coding",
+            display_name="Manual Coding Provider",
+            capabilities=("code_generation",),
+            access_mode=AccessMode.MANUAL,
+            cost_tier=CostTier.FREE,
+            enabled=True,
+            priority=10,
+            notes="Disponibilidade depende de ação manual do usuário.",
+        ),
+        ProviderProfile(
+            provider_id="local-provider",
+            display_name="Local Provider",
+            capabilities=("text_generation",),
+            access_mode=AccessMode.LOCAL,
+            cost_tier=CostTier.LOCAL,
+            enabled=False,
+            priority=10,
+            notes="Perfil demonstrativo; executor não configurado.",
+        ),
+        ProviderProfile(
+            provider_id="api-provider",
+            display_name="API Provider",
+            capabilities=("text_generation",),
+            access_mode=AccessMode.API,
+            cost_tier=CostTier.LIMITED_FREE,
+            enabled=False,
+            priority=30,
+            notes="Perfil demonstrativo; API não configurada.",
+        ),
+        ProviderProfile(
+            provider_id="paid-provider",
+            display_name="Paid Provider",
+            capabilities=("text_generation",),
+            access_mode=AccessMode.API,
+            cost_tier=CostTier.PAID,
+            enabled=False,
+            priority=5,
+            notes="Perfil demonstrativo; cobrança não configurada.",
+        ),
+        ProviderProfile(
+            provider_id="fake",
+            display_name="Development Fake Provider",
+            capabilities=("text_generation",),
+            access_mode=AccessMode.LOCAL,
+            cost_tier=CostTier.LOCAL,
+            enabled=True,
+            priority=50,
+            notes="Provider determinístico local para desenvolvimento.",
+        ),
     )

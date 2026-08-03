@@ -36,10 +36,17 @@ class AIOrchestrator:
         return self._provider_ids
 
     def generate(self, request: AIRequest) -> Result:
+        return self.generate_with_order(request, self._provider_ids)
+
+    def generate_with_order(
+        self,
+        request: AIRequest,
+        provider_ids: Iterable[str],
+    ) -> Result:
         attempts: list[AIProviderAttempt] = []
         compatible_provider_found = False
 
-        for provider_id in self._provider_ids:
+        for provider_id in tuple(provider_ids):
             try:
                 provider = self._registry.get(provider_id)
             except ValueError:

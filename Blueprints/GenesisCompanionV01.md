@@ -1,6 +1,6 @@
 # Blueprint — Genesis Companion
 
-**Versão:** 0.3
+**Versão:** 0.4
 
 ## Objetivo
 
@@ -45,6 +45,17 @@ Planning, Execution e AI continuam como fontes oficiais das regras de negócio.
 - Application Health permanece indicador operacional e não representa o
   Genesis Doctor.
 
+## Interface Redesign v2
+
+- dashboard compacto, orientado a tarefas e sem espaços vazios excessivos;
+- ações rápidas para Workspace, Project, Memory e Mission;
+- projetos recentes em tabela e últimas atividades em timeline lateral;
+- header contextual com Workspace, armazenamento, versão e disponibilidade dos
+  Application Services;
+- estados de foco visíveis, navegação semântica e link para saltar ao conteúdo;
+- layout adaptável para desktop, tablet e mobile sem rolagem horizontal da
+  página principal.
+
 ## Fluxo público
 
 1. `GET /` mostra nome, versão, ambiente e formulário;
@@ -65,6 +76,11 @@ Planning, Execution e AI continuam como fontes oficiais das regras de negócio.
 - `/doctor`: Application Health e disponibilidade dos serviços, preservando a
   rota sem representar o Genesis Doctor oficial;
 - `/settings`: limites e configuração da instância local.
+- `/intelligence`: catálogo configurado, decisão Free First e Manual Handoffs;
+- `POST /intelligence/route`: produz decisão explicável;
+- `POST /intelligence/handoffs`: cria um handoff sem acessar sites externos;
+- `POST /intelligence/handoffs/{id}/complete`: registra a resposta manual e
+  permite salvá-la como Memory.
 
 A Interface utiliza exclusivamente `WorkspaceApplicationService`,
 `ProjectService`, `MissionApplicationService` e `MemoryService` por meio da fachada

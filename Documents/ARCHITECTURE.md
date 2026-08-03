@@ -87,10 +87,17 @@ Orchestrator, Event, EventBus, Dispatcher, Logger e Lifecycle.
 ### Engines
 
 Capacidades internas especializadas. Atualmente há implementações funcionais de
-AI, Mission, Planning, Execution, Workspace, Projects e Memory Foundation.
+AI, Intelligence, Mission, Planning, Execution, Workspace, Projects e Memory
+Foundation.
 Workspace, Projects e Memory possuem contracts de repository com adapters em
 memória e SQLite. Memory não possui embeddings ou IA. Knowledge, Search, Storage
 e AIRouter são estruturas vazias ou planejadas.
+
+O Intelligence Engine mantém catálogo de configuração separado do Registry de
+providers executáveis. Seu Router produz decisões determinísticas por
+capability, acesso, custo e prioridade; providers automáticos continuam sendo
+executados exclusivamente pelo AIOrchestrator. Providers manuais usam handoff
+sem automação ou acesso externo.
 
 ### Agents
 
@@ -116,6 +123,7 @@ e Storage dependem de Blueprint e review arquitetural antes da criação.
 - execução de missão sequencial, sem retry, retomada ou persistência;
 - Memory e Projects isolados por Workspace e integrados ao Companion;
 - apenas FakeProvider, sem rede ou credenciais;
+- Intelligence Router local, sem verificação externa de disponibilidade;
 - EventBus síncrono e em memória;
 
 ## Fluxo de evolução

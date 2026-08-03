@@ -144,6 +144,26 @@ def test_provider_priority_order_is_respected():
     assert result.data.provider_id == "secondary"
 
 
+def test_explicit_intelligence_order_reuses_orchestrator_pipeline():
+    registry = Registry()
+    configured_first = StubProvider("configured-first")
+    routed_first = StubProvider("routed-first")
+    register(registry, configured_first, routed_first)
+    orchestrator = AIOrchestrator(
+        registry,
+        provider_ids=("configured-first", "routed-first"),
+    )
+
+    result = orchestrator.generate_with_order(
+        AIRequest(prompt="Olá"),
+        ("routed-first", "configured-first"),
+    )
+
+    assert result.data.provider_id == "routed-first"
+    assert routed_first.generate_calls == 1
+    assert configured_first.generate_calls == 0
+
+
 def test_first_provider_success_is_returned():
     registry = Registry()
     first = StubProvider("first")

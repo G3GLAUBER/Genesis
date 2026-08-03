@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body data-environment="$environment">
+  <a class="skip-link" href="#main-content">Saltar para o conteúdo</a>
   <div class="app-shell">
     <aside class="sidebar">
       <a class="brand" href="/"><span class="brand-mark">G</span>
@@ -16,7 +17,7 @@
         <div><strong>Genesis 0.4</strong><small>Ambiente: $environment</small></div>
       </div>
     </aside>
-    <main class="main-content">
+    <main class="main-content" id="main-content">
       <header class="topbar">
         <div class="page-heading"><span class="eyebrow">Genesis Companion</span>
           <h1>$page_title</h1><p>$page_subtitle</p></div>
@@ -24,7 +25,8 @@
           <div><small>Workspace ativo</small><strong>$active_workspace</strong></div>
           <div><small>Modo</small><strong>$storage_mode</strong></div>
           <div><small>Versão</small><strong>Genesis 0.4</strong></div>
-          <time><small>Hora local</small><strong>$current_time</strong></time>
+          <div class="services-indicator"><span class="$health_class"></span>
+            <small>Serviços disponíveis</small><strong>$services_available</strong></div>
         </div>
       </header>
       <div class="page-content">$content</div>

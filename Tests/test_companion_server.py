@@ -66,6 +66,25 @@ def test_dashboard_has_professional_metrics_sidebar_and_timeline(
     assert "Timeline" in content
 
 
+def test_redesign_v2_exposes_context_actions_and_accessibility(
+    companion_server,
+):
+    with urlopen(f"{companion_server}/", timeout=2) as response:
+        content = response.read().decode("utf-8")
+
+    assert response.status == HTTPStatus.OK
+    assert 'class="skip-link" href="#main-content"' in content
+    assert 'id="main-content"' in content
+    assert 'aria-current="page"' in content
+    assert "Serviços disponíveis" in content
+    assert 'class="dashboard-actions"' in content
+    assert 'href="/workspaces">+ Workspace</a>' in content
+    assert 'href="/projects">+ Projeto</a>' in content
+    assert 'href="/memory">+ Memória</a>' in content
+    assert 'href="#new-mission">Nova missão</a>' in content
+    assert 'class="projects-table compact-table"' in content
+
+
 def test_empty_projects_page_keeps_table_structure(companion_server):
     with urlopen(f"{companion_server}/projects", timeout=2) as response:
         content = response.read().decode("utf-8")

@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from Application.bootstrap import bootstrap_application
 from Application.models import MissionApplicationExecution
 from Application.services import (
+    IntelligenceApplicationService,
     MemoryService,
     MissionApplicationService,
     ProjectService,
@@ -22,6 +23,7 @@ if TYPE_CHECKING:
     from Engines.Planning import Planner
     from Engines.Projects import Project
     from Engines.Workspace import Workspace, WorkspaceManager
+    from Engines.Intelligence import RoutingMode
 
 
 CompanionExecution = MissionApplicationExecution
@@ -64,6 +66,7 @@ class CompanionApplication:
         active_workspace_id: str | None = None,
         memory_service: MemoryService | None = None,
         project_service: ProjectService | None = None,
+        intelligence_service: IntelligenceApplicationService | None = None,
     ) -> None:
         workspace_service = (
             WorkspaceApplicationService(
@@ -78,6 +81,7 @@ class CompanionApplication:
         self._workspace_service = workspace_service
         self._memory_service = memory_service
         self._project_service = project_service
+        self._intelligence_service = intelligence_service
         self._persistence_mode = "memory"
         self._mission_service = MissionApplicationService(
             mission_engine,
@@ -103,8 +107,79 @@ class CompanionApplication:
         application._workspace_service = container.workspace_service
         application._memory_service = container.memory_service
         application._project_service = container.project_service
+        application._intelligence_service = container.intelligence_service
         application._persistence_mode = container.persistence_mode
         return application
+
+    def list_provider_profiles(self) -> Result:
+        if self._intelligence_service is None:
+            return Result.error(
+                message="IntelligenceApplicationService não está disponível"
+            )
+        return self._intelligence_service.list_provider_profiles()
+
+    def route_intelligence(
+        self,
+        *,
+        prompt: str | None,
+        capability: str | None = "general_assistance",
+        mode: RoutingMode,
+    ) -> Result:
+        if self._intelligence_service is None:
+            return Result.error(
+                message="IntelligenceApplicationService não está disponível"
+            )
+        return self._intelligence_service.route(
+            prompt=prompt,
+            capability=capability,
+            mode=mode,
+        )
+
+    def create_manual_handoff(
+        self,
+        *,
+        provider_id: str | None,
+        prompt: str | None,
+        workspace_id: str | None = None,
+        project_id: str | None = None,
+    ) -> Result:
+        if self._intelligence_service is None:
+            return Result.error(
+                message="IntelligenceApplicationService não está disponível"
+            )
+        selected_workspace = (
+            workspace_id or self._workspace_service.active_workspace_id
+        )
+        return self._intelligence_service.create_manual_handoff(
+            provider_id=provider_id,
+            prompt=prompt,
+            workspace_id=selected_workspace,
+            project_id=project_id,
+        )
+
+    def complete_manual_handoff(
+        self,
+        handoff_id: str | None,
+        *,
+        response: str | None,
+        save_as_memory: bool = False,
+    ) -> Result:
+        if self._intelligence_service is None:
+            return Result.error(
+                message="IntelligenceApplicationService não está disponível"
+            )
+        return self._intelligence_service.complete_manual_handoff(
+            handoff_id,
+            response=response,
+            save_as_memory=save_as_memory,
+        )
+
+    def list_manual_handoffs(self) -> Result:
+        if self._intelligence_service is None:
+            return Result.error(
+                message="IntelligenceApplicationService não está disponível"
+            )
+        return self._intelligence_service.list_manual_handoffs()
 
     def create_workspace(
         self,
