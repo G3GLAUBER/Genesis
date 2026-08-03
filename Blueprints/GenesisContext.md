@@ -27,7 +27,7 @@ Representar uma execução do Gênesis.
 
 ## Critérios
 
-- [ ] Classe Context criada
-- [ ] Imutável
-- [ ] Testes
+- [x] Classe Context criada
+- [x] Imutável
+- [x] Testes
 - [ ] Integração futura

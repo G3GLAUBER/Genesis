@@ -1,6 +1,29 @@
 # AGENTS.md — Guia para agentes de código
 
-Este arquivo define as regras de trabalho para qualquer agente de código que atue no repositório Genesis. Leia também `Documents/GenesisConstitution.md`, `Documents/ARCHITECTURE.md` e os Blueprints relacionados antes de modificar o projeto. Em caso de conflito, a Constituição e a arquitetura oficial prevalecem.
+Este arquivo define as regras de trabalho para qualquer agente de código que atue no repositório Genesis.
+
+## Autoridade documental
+
+Antes de modificar o projeto, leia nesta ordem:
+
+1. `Documents/GenesisConstitution.md` — Constituição canônica;
+2. `Documents/ADR/*.md` — decisões arquiteturais aceitas e vigentes;
+3. `Documents/ARCHITECTURE.md` — arquitetura oficial e estado atual;
+4. `Documents/ROADMAP.md` — sequência de evolução planejada;
+5. todos os Blueprints aplicáveis em `Blueprints/`;
+6. o código relacionado à mudança;
+7. os testes relacionados e consumidores dos contratos afetados.
+
+A precedência normativa é: Constituição → ADRs vigentes → Architecture →
+Roadmap → Blueprints → código → testes. Código e testes comprovam o estado
+implementado, mas não tornam válida uma violação de documento superior.
+
+Em caso de conflito, não escolha silenciosamente uma interpretação e não amplie
+o escopo da mudança. Registre o conflito, aplique o documento vigente de maior
+autoridade e corrija primeiro a fonte inferior por Blueprint ou review
+arquitetural quando necessário. Documentos marcados como `Superseded`,
+`Archived` ou históricos não são normativos. A política completa e os caminhos
+canônicos estão em `Documents/ADR/ADR-002-Documentation-Authority.md`.
 
 ## Missão e visão
 
@@ -39,7 +62,12 @@ Componentes existentes do Core:
 - `logger.py`: interface central de logs.
 - `lifecycle.py`: estados e ciclo de vida do Kernel.
 
-`Services/` e `Storage/` pertencem à arquitetura oficial planejada, mas ainda não estão implementados neste repositório. Não simule sua existência nem antecipe abstrações sem um Blueprint aprovado. `Core/Orchestrator/router.py`, `Core/Orchestrator/session.py`, `Engines/` e `Agents/` são estruturas ainda vazias ou iniciais.
+`Services/` e `Storage/` são conceitos planejados, não camadas implementadas nem
+aprovadas para uso. Não simule sua existência nem antecipe abstrações sem
+Blueprint e review arquitetural. `Core/Orchestrator/router.py` e
+`Core/Orchestrator/session.py` estão vazios. `Engines/` contém componentes
+funcionais de AI, Mission, Planning, Execution e Workspace, além de estruturas
+vazias ou experimentais. `Agents/` permanece inicial.
 
 ## Responsabilidades por área
 

@@ -104,10 +104,10 @@ Relatório
 
 # Critérios de conclusão
 
-- [ ] Blueprint aprovado
-- [ ] Doctor v2 implementado
-- [ ] Health Score funcionando
-- [ ] Git Status validado
-- [ ] Blueprints validados
-- [ ] Testes contabilizados
-- [ ] Testes automatizados
+- [x] Blueprint aprovado
+- [x] Doctor v2 implementado
+- [x] Health Score funcionando
+- [x] Git Status validado
+- [x] Blueprints validados
+- [x] Testes contabilizados
+- [x] Testes automatizados

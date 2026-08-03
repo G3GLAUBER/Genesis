@@ -1,4 +1,7 @@
-# Master Plan - Projeto Gênesis
+> **Status: Superseded.** Plano histórico preservado para referência. O roadmap
+> canônico é `Documents/ROADMAP.md`.
+
+# Master Plan histórico - Projeto Gênesis
 
 ## Fase 1 — Fundação ✅
 

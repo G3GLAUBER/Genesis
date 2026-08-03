@@ -1,4 +1,7 @@
-# Mapa Oficial do Gênesis
+> **Status: Superseded.** Este mapa representa uma visão planejada antiga. A
+> arquitetura e o estado atual canônicos estão em `Documents/ARCHITECTURE.md`.
+
+# Mapa histórico do Gênesis
 
 ```mermaid
 flowchart TD

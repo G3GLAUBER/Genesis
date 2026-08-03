@@ -39,8 +39,8 @@ logger.error("Mensagem")
 
 ## Critérios
 
-- [ ] Logger criado
-- [ ] info()
-- [ ] warning()
-- [ ] error()
-- [ ] Testes
+- [x] Logger criado
+- [x] info()
+- [x] warning()
+- [x] error()
+- [x] Testes

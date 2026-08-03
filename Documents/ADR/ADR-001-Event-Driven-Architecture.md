@@ -1,5 +1,10 @@
 # ADR-001 — Arquitetura Orientada a Eventos
 
+> **Identificador legado; parcialmente superseded pelo ADR-002.** A arquitetura
+> orientada a eventos permanece aceita, mas a exigência absoluta de EventBus foi
+> substituída: chamadas síncronas entre contratos públicos podem ser definidas
+> por Blueprint; eventos são usados quando existir semântica aprovada.
+
 ## Status
 Aceito
 

@@ -71,20 +71,22 @@ CLI
 
 # Interface pública
 
-dispatch(command, args)
+```python
+dispatch(context, *args, **kwargs) -> Any
+```
 
-↓
+O método localiza o handler pelo comando presente no `Context`, executa-o com
+os argumentos recebidos e retorna diretamente o valor produzido pelo handler.
 
-retorna
-
-Result
+O Orchestrator não encapsula automaticamente esse valor em `Result`. Um handler
+pode retornar `Result` quando esse for o contrato específico do comando.
 
 ---
 
 # Critérios de conclusão
 
-- [ ] Classe Orchestrator criada
-- [ ] Método dispatch()
-- [ ] Tratamento de comandos inexistentes
-- [ ] Integração com CLI
-- [ ] Testes automatizados
+- [x] Classe Orchestrator criada
+- [x] Método dispatch()
+- [x] Tratamento de comandos inexistentes
+- [x] Integração com CLI
+- [x] Testes automatizados

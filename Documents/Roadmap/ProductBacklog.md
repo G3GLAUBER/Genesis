@@ -1,4 +1,7 @@
-# Product Backlog - Gênesis
+> **Status: Superseded.** Backlog histórico preservado para referência. O
+> roadmap canônico é `Documents/ROADMAP.md`.
+
+# Product Backlog histórico - Gênesis
 
 ## EPIC 1 - Core
 

@@ -1,5 +1,8 @@
 # ADR-001
 
+> **Identificador legado.** A decisão permanece aceita. Novos ADRs usam
+> numeração única conforme `ADR-002-Documentation-Authority.md`.
+
 ## Título
 
 Genesis Engineering Philosophy

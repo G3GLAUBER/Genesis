@@ -1,190 +1,113 @@
 # Gênesis — Arquitetura Oficial
 
-Versão: 1.0
+Versão: 1.1
+Status: Canônico
 
----
+## Objetivo
 
-# Objetivo
+O Gênesis é um Sistema Operacional de Inteligência Modular. Engines, Agents e
+Interfaces evoluem de forma desacoplada por meio de contratos e infraestrutura
+comuns, preservando independência de fornecedores de IA.
 
-O Gênesis é um Sistema Operacional de Inteligência Modular.
+## Princípios obrigatórios
 
-Seu objetivo é permitir que diferentes motores (Engines), agentes (Agents) e interfaces (Interfaces) trabalhem de forma desacoplada através de um núcleo comum.
+- o Kernel nunca depende de Engines;
+- Interfaces não contêm regras de domínio;
+- cada responsabilidade possui uma única fonte oficial de verdade;
+- componentes novos possuem Blueprint e testes;
+- contratos públicos evoluem de forma compatível;
+- simplicidade, coesão e substituibilidade prevalecem;
+- SDKs, modelos e credenciais de fornecedores não entram no Core, CLI,
+  Interfaces ou contratos de domínio.
 
----
+## Estado implementado
 
-# Princípios
+O fluxo do Kernel é:
 
-## 1. Modularidade
+```text
+Usuário → CLI → Context → Orchestrator → Registry → handler → Result/resposta
+```
 
-Cada módulo deve possuir uma única responsabilidade.
+A comunicação local por eventos é:
 
-Exemplo:
+```text
+Event → EventBus → Dispatcher → listeners
+```
 
-CLI
-→ recebe comandos.
+O fluxo demonstrativo do Companion é:
 
-Doctor
-→ verifica a saúde do sistema.
+```text
+Browser → Companion → Mission → Planning → Execution → AI Orchestrator
+                  └→ Workspace em memória          └→ FakeProvider
+```
 
-Memory
-→ gerencia memória.
+Chamadas diretas entre contratos públicos de Engines são permitidas quando um
+Blueprint específico define a composição. O EventBus é usado para comunicação
+desacoplada quando existe um evento semanticamente aprovado; ele não é uma
+exigência para toda chamada síncrona. O ADR-002 substitui, nesse ponto, a
+formulação absoluta do ADR histórico de eventos.
 
-Knowledge
-→ gerencia conhecimento.
+## Camadas e direção de dependências
 
----
+```text
+Interfaces/CLI → Engines → Core
+Agents         → contratos públicos de Engines/Core
+Core           ↛ Engines, Agents, Interfaces ou fornecedores
+```
 
-## 2. Baixo Acoplamento
+### CLI e Interfaces
 
-Nenhum módulo deve depender diretamente de outro.
+Recebem entrada, validam formato, criam contexto quando aplicável, chamam casos
+de uso ou contratos públicos e apresentam resultados. Podem compor dependências
+na fundação atual, mas não devem se tornar fonte de regras de domínio.
 
-A comunicação deve ocorrer através do:
+### Core
 
-- Orchestrator
-- EventBus
+Kernel pequeno e estável: Configuration, Context, Result, Registry,
+Orchestrator, Event, EventBus, Dispatcher, Logger e Lifecycle.
 
----
+### Engines
 
-## 3. Alta Coesão
+Capacidades internas especializadas. Atualmente há implementações funcionais de
+AI, Mission, Planning, Execution e Workspace. Memory é experimental e não deve
+ser considerado funcional até possuir Blueprint e testes. Knowledge, Search,
+Storage e AIRouter são estruturas vazias ou planejadas.
 
-Cada arquivo deve resolver apenas um problema.
+### Agents
 
-Evitar arquivos gigantes.
+Compõem capacidades por contratos oficiais. Não acessam persistência diretamente
+e não acoplam o Kernel a fornecedores. Ainda não há Agent funcional aprovado.
 
----
+### Tests
 
-## 4. Testabilidade
+Protegem contratos, comportamento e compatibilidade. Testes não substituem
+Blueprints nem decisões arquiteturais.
 
-Toda funcionalidade nova deve possuir testes automatizados.
+## Conceitos planejados, não implementados
 
----
+Uma camada de aplicação/casos de uso, persistência, Services e Storage dependem
+de Blueprint e review arquitetural antes da criação. A menção no Roadmap não
+autoriza sua implementação nem estabelece antecipadamente seus contratos.
 
-## 5. Evolução Incremental
+## Restrições atuais conhecidas
 
-Nenhuma Sprint adicionará funcionalidades sem antes estabilizar as anteriores.
+- Companion local, síncrono e sem autenticação;
+- Workspace mantido em memória e compartilhado pela instância local;
+- execução de missão sequencial, sem retry, retomada ou persistência;
+- apenas FakeProvider, sem rede ou credenciais;
+- EventBus síncrono e em memória;
+- Memory experimental e fora dos contratos oficiais.
 
----
+## Fluxo de evolução
 
-# Camadas
-
-Usuário
-
-↓
-
-CLI
-
-↓
-
-Orchestrator
-
-↓
-
-Services
-
-↓
-
-Engines
-
-↓
-
-Storage
-
----
-
-# Estrutura
-
-Core/
-
-Responsável por:
-
-- EventBus
-- Dispatcher
-- Registry
-- Lifecycle
-- Orchestrator
-
----
-
-CLI/
-
-Responsável por:
-
-- receber comandos
-- validar argumentos
-- encaminhar para o módulo correto
-
-Nunca conter lógica de negócio.
-
----
-
-Engines/
-
-Motores internos.
-
-Exemplo:
-
-Memory
-
-Knowledge
-
-Search
-
-AI Router
-
----
-
-Services/
-
-Camada de regras de negócio.
-
----
-
-Agents/
-
-Agentes inteligentes.
-
-Nunca acessam Storage diretamente.
-
----
-
-Storage/
-
-Persistência.
-
-Arquivos.
-
-Banco.
-
-Vetores.
-
----
-
-# Fluxo Oficial
-
-Blueprint
-
-↓
-
-Código
-
-↓
-
-Teste
-
-↓
-
-Review
-
-↓
-
-Commit
-
-↓
-
-Push
-
----
-
-# Regra Principal
-
-Se uma funcionalidade não puder ser explicada em poucas frases, ela está grande demais e deve ser dividida.
+```text
+Missão → review arquitetural quando necessário → Blueprint → implementação
+→ testes → review → Doctor → commit autorizado → push autorizado
+```
+
+## Fontes canônicas relacionadas
+
+- Constituição: `Documents/GenesisConstitution.md`;
+- autoridade documental: `Documents/ADR/ADR-002-Documentation-Authority.md`;
+- roadmap: `Documents/ROADMAP.md`;
+- contratos de componentes: `Blueprints/Genesis<Componente>.md`.

@@ -1,3 +1,6 @@
+> **Status: Superseded.** Documento histórico preservado para referência. A
+> Constituição canônica é `Documents/GenesisConstitution.md`.
+
 # Constituição do Projeto Gênesis
 
 ## Missão
