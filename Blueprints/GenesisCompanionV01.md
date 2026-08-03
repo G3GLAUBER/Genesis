@@ -1,6 +1,6 @@
 # Blueprint — Genesis Companion
 
-**Versão:** 0.2
+**Versão:** 0.3
 
 ## Objetivo
 
@@ -30,7 +30,20 @@ Planning, Execution e AI continuam como fontes oficiais das regras de negócio.
 - `http.server.ThreadingHTTPServer` da biblioteca padrão;
 - HTML em template e CSS estático próprio;
 - `urllib.parse` para formulários;
-- sem dependências externas, JavaScript, banco ou autenticação.
+- sem dependências frontend externas, JavaScript ou autenticação;
+- armazenamento consumido exclusivamente pelos Application Services.
+
+## Experiência profissional v1
+
+- layout responsivo com header contextual, sidebar fixa e conteúdo principal;
+- navegação com ícones SVG locais, sem biblioteca externa;
+- header com Workspace ativo, modo de armazenamento, versão e hora local;
+- dashboard com cards de Projects, Missions, Memory, Execution, Workspaces e
+  Application Health;
+- Projects apresentados em tabela responsiva com cliente, status e criação;
+- timeline de últimas atividades em painel lateral;
+- Application Health permanece indicador operacional e não representa o
+  Genesis Doctor.
 
 ## Fluxo público
 

@@ -36,6 +36,44 @@ def test_home_page_loads_form_and_environment(companion_server):
     assert "Gênesis" in content
     assert "Ambiente:" in content
     assert 'action="/missions"' in content
+    assert "Workspace ativo" in content
+    assert "Genesis 0.4" in content
+    assert "SQLite local" not in content
+    assert "Memória local" in content
+    assert content.count('<svg class="icon"') >= 14
+
+
+def test_dashboard_has_professional_metrics_sidebar_and_timeline(
+    companion_server,
+):
+    with urlopen(f"{companion_server}/", timeout=2) as response:
+        content = response.read().decode("utf-8")
+
+    assert response.status == HTTPStatus.OK
+    for label in (
+        "Dashboard",
+        "Workspaces",
+        "Projetos",
+        "Missões",
+        "Memórias",
+        "Execuções",
+        "Application Health",
+        "Configurações",
+    ):
+        assert label in content
+    assert 'class="metric-grid"' in content
+    assert 'class="dashboard-grid"' in content
+    assert "Timeline" in content
+
+
+def test_empty_projects_page_keeps_table_structure(companion_server):
+    with urlopen(f"{companion_server}/projects", timeout=2) as response:
+        content = response.read().decode("utf-8")
+
+    assert response.status == HTTPStatus.OK
+    assert 'class="projects-table"' in content
+    assert 'class="table-empty"' in content
+    assert "Nenhum projeto neste Workspace." in content
 
 
 def test_post_executes_mission_and_renders_report(companion_server):
@@ -233,7 +271,9 @@ def test_application_health_is_distinct_from_genesis_doctor(companion_server):
     assert "DISPONÍVEL" in content
     assert "SAUDÁVEL" not in content
     assert "Health Score" not in content
-    assert "Este indicador não substitui o Genesis Doctor." in content
+    assert "Indicador operacional. Não substitui o Genesis Doctor." in content
+    assert "SQLite conectado" in content
+    assert "Modo persistente" in content
 
 
 def test_http_project_flow_creates_lists_and_updates_dashboard(companion_server):
@@ -261,6 +301,11 @@ def test_http_project_flow_creates_lists_and_updates_dashboard(companion_server)
     assert "Projeto criado" in created
     assert "Empresa Remodelações" in created
     assert "Cliente HTTP" in listed
+    assert 'class="projects-table"' in listed
+    assert "<th>Projeto</th>" in listed
+    assert "<th>Cliente</th>" in listed
+    assert "<th>Status</th>" in listed
+    assert "<th>Criado</th>" in listed
     assert "Projetos ativos" in dashboard
     assert "Projetos concluídos" in dashboard
     assert "Últimos projetos" in dashboard

@@ -6,21 +6,26 @@
   <title>$title · Genesis Companion</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
-<body>
+<body data-environment="$environment">
   <div class="app-shell">
     <aside class="sidebar">
       <a class="brand" href="/"><span class="brand-mark">G</span>
         <span><strong>$system_name</strong><small>Intelligence OS</small></span></a>
-      <nav>$sidebar</nav>
+      <nav aria-label="Navegação principal">$sidebar</nav>
       <div class="sidebar-status"><span class="status-light"></span>
-        <div><strong>Genesis local</strong><small>v$version · Ambiente: $environment</small></div>
+        <div><strong>Genesis 0.4</strong><small>Ambiente: $environment</small></div>
       </div>
     </aside>
     <main class="main-content">
       <header class="topbar">
-        <div><span class="eyebrow">Genesis Companion</span>
+        <div class="page-heading"><span class="eyebrow">Genesis Companion</span>
           <h1>$page_title</h1><p>$page_subtitle</p></div>
-        <div class="local-badge"><span></span> Ambiente local</div>
+        <div class="header-context" aria-label="Contexto da aplicação">
+          <div><small>Workspace ativo</small><strong>$active_workspace</strong></div>
+          <div><small>Modo</small><strong>$storage_mode</strong></div>
+          <div><small>Versão</small><strong>Genesis 0.4</strong></div>
+          <time><small>Hora local</small><strong>$current_time</strong></time>
+        </div>
       </header>
       <div class="page-content">$content</div>
     </main>

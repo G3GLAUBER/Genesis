@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from html import escape
 from pathlib import Path
 from string import Template
@@ -67,6 +68,9 @@ def render_page(
         system_name=escape(config.system_name),
         version=escape(config.version),
         environment=escape(config.environment),
+        active_workspace=escape(_active_workspace_name(dashboard)),
+        storage_mode=escape(_storage_mode(dashboard)),
+        current_time=datetime.now().astimezone().strftime("%H:%M"),
         sidebar=_render_sidebar(page),
         page_title=escape(title),
         page_subtitle=_page_subtitle(page),
@@ -122,20 +126,55 @@ def _page_content(**context) -> str:
 
 def _render_sidebar(active_page: str) -> str:
     items = (
-        ("dashboard", "/", "◈", "Dashboard"),
-        ("workspaces", "/workspaces", "▦", "Workspaces"),
-        ("projects", "/projects", "▤", "Projetos"),
-        ("missions", "/missions", "◎", "Missões"),
-        ("memory", "/memory", "◇", "Memórias"),
-        ("executions", "/executions", "▶", "Execuções"),
-        ("doctor", "/doctor", "✚", "Saúde dos Serviços"),
-        ("settings", "/settings", "⚙", "Configurações"),
+        ("dashboard", "/", "dashboard", "Dashboard"),
+        ("workspaces", "/workspaces", "workspaces", "Workspaces"),
+        ("projects", "/projects", "projects", "Projetos"),
+        ("missions", "/missions", "missions", "Missões"),
+        ("memory", "/memory", "memory", "Memórias"),
+        ("executions", "/executions", "executions", "Execuções"),
+        (
+            "doctor",
+            "/doctor",
+            "health",
+            "Application Health<small>Saúde dos Serviços</small>",
+        ),
+        ("settings", "/settings", "settings", "Configurações"),
     )
     return "".join(
         f'<a class="nav-item{" active" if key == active_page else ""}" '
-        f'href="{href}"><span>{icon}</span>{label}</a>'
+        f'href="{href}">{_icon(icon)}<span>{label}</span></a>'
         for key, href, icon, label in items
     )
+
+
+def _icon(name: str) -> str:
+    paths = {
+        "dashboard": '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>',
+        "workspaces": '<path d="M4 5h6l2 2h8v12H4z"/>',
+        "projects": '<path d="M4 7h16v13H4zM8 7V4h8v3M8 12h8"/>',
+        "missions": '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="m15 9 5-5"/>',
+        "memory": '<path d="M8 4h8a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3zM9 9h6M9 13h6"/>',
+        "executions": '<path d="m9 7 8 5-8 5z"/><circle cx="12" cy="12" r="10"/>',
+        "health": '<path d="M3 12h4l2-5 4 10 2-5h6"/>',
+        "settings": '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
+        "storage": '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7"/>',
+    }
+    return (
+        '<svg class="icon" aria-hidden="true" viewBox="0 0 24 24" '
+        'fill="none" stroke="currentColor" stroke-width="1.7" '
+        'stroke-linecap="round" stroke-linejoin="round">'
+        f'{paths[name]}</svg>'
+    )
+
+
+def _active_workspace_name(dashboard: CompanionDashboard | None) -> str:
+    if dashboard is None or dashboard.active_workspace is None:
+        return "Nenhum Workspace"
+    return dashboard.active_workspace.name
+
+
+def _storage_mode(dashboard: CompanionDashboard | None) -> str:
+    return dashboard.storage_label if dashboard else "Indisponível"
 
 
 def _page_subtitle(page: str) -> str:
@@ -161,35 +200,39 @@ def _render_dashboard(
         return '<section class="panel error">Dashboard indisponível.</section>'
     active = dashboard.active_workspace
     active_name = active.name if active is not None else "Nenhum Workspace"
-    last_activity = (
-        dashboard.last_activity.astimezone().strftime("%d/%m/%Y · %H:%M")
-        if dashboard.last_activity is not None
-        else "Nenhuma atividade"
-    )
     metrics = (
-        ("Workspace ativo", active_name, "workspace"),
-        ("Missões", str(dashboard.mission_count), "missions"),
-        ("Memórias", str(dashboard.memory_count), "memory"),
-        ("Execuções", str(dashboard.execution_count), "executions"),
-        ("Projetos ativos", str(dashboard.active_project_count), "projects"),
         (
-            "Projetos concluídos",
-            str(dashboard.completed_project_count),
-            "projects-completed",
+            "Projetos",
+            str(
+                dashboard.active_project_count
+                + dashboard.completed_project_count
+            ),
+            "projects",
+            f"Projetos ativos: {dashboard.active_project_count} · "
+            f"Projetos concluídos: {dashboard.completed_project_count}",
         ),
-        ("Saúde dos Serviços", dashboard.application_health, "health"),
-        ("Última atividade", last_activity, "activity"),
-        ("Armazenamento", dashboard.storage_label, "storage"),
+        ("Missões", str(dashboard.mission_count), "missions", "No Workspace ativo"),
+        ("Memórias", str(dashboard.memory_count), "memory", "Registros disponíveis"),
+        ("Execuções", str(dashboard.execution_count), "executions", "Processamentos locais"),
+        ("Workspaces", str(dashboard.workspace_count), "workspaces", active_name),
+        (
+            "Application Health",
+            dashboard.application_health,
+            "health",
+            f"{dashboard.available_service_count}/{dashboard.service_count} services",
+        ),
     )
     cards = "".join(
-        f'<article class="metric-card {css}"><span>{escape(label)}</span>'
-        f'<strong>{escape(value)}</strong></article>'
-        for label, value, css in metrics
+        f'<article class="metric-card {css}"><div class="metric-icon">'
+        f'{_icon(css)}</div><div><span>{escape(label)}</span>'
+        f'<strong>{escape(value)}</strong><small>{escape(description)}</small>'
+        f'</div></article>'
+        for label, value, css, description in metrics
     )
     feedback = _render_feedback(result)
     result_content = _render_mission_result(result) if result else ""
     return f"""<section class="metric-grid">{cards}</section>
-<section class="split-grid">
+<section class="dashboard-grid">
   <article class="panel">
     <div class="panel-heading"><div><span class="eyebrow">Ação rápida</span>
       <h2>Nova missão</h2></div><span class="status-dot">Local</span></div>
@@ -221,8 +264,14 @@ def _render_projects(
 ) -> str:
     active = dashboard.active_workspace if dashboard else None
     workspace_id = active.id if active else ""
-    cards = "".join(_project_card(project) for project in reversed(projects))
-    cards = cards or _empty_state("Nenhum projeto neste Workspace.")
+    rows = "".join(_project_row(project) for project in reversed(projects))
+    rows = rows or (
+        '<tr class="table-empty"><td colspan="4">'
+        "Nenhum projeto neste Workspace.</td></tr>"
+    )
+    table = f"""<div class="table-scroll"><table class="projects-table">
+      <thead><tr><th>Projeto</th><th>Cliente</th><th>Status</th>
+      <th>Criado</th></tr></thead><tbody>{rows}</tbody></table></div>"""
     return f"""<section class="split-grid projects-layout">
   <article class="panel"><span class="eyebrow">Nova obra</span>
     <h2>Criar projeto</h2>{_render_feedback(result)}
@@ -239,11 +288,21 @@ def _render_projects(
       <button type="submit">Criar projeto <span>→</span></button>
     </form>
   </article>
-  <article class="panel"><span class="eyebrow">Workspace</span>
-    <h2>{escape(active.name if active else 'Nenhum')}</h2>
-    <div class="card-list">{cards}</div>
+  <article class="panel projects-panel"><span class="eyebrow">Workspace</span>
+    <h2>{escape(active.name if active else 'Nenhum')}</h2>{table}
   </article>
 </section>"""
+
+
+def _project_row(project: Any) -> str:
+    status = escape(project.status.value.upper())
+    return f"""<tr>
+      <td><strong>{escape(project.title)}</strong>
+        <small>{escape(project.address)}</small></td>
+      <td>{escape(project.client)}</td>
+      <td><span class="pill status-{escape(project.status.value)}">{status}</span></td>
+      <td><time>{project.created_at.astimezone().strftime('%d/%m/%Y')}</time></td>
+    </tr>"""
 
 
 def _project_card(project: Any) -> str:
@@ -375,13 +434,23 @@ def _render_doctor(dashboard: CompanionDashboard | None) -> str:
     available = dashboard.available_service_count if dashboard else 0
     service_count = dashboard.service_count if dashboard else 3
     css_class = "success" if status == "DISPONÍVEL" else "degraded"
-    return f"""<section class="panel doctor-card">
+    storage = dashboard.storage_label if dashboard else "Indisponível"
+    sqlite_connected = "SIM" if storage == "SQLite local" else "NÃO"
+    persistent_mode = "ATIVO" if storage == "SQLite local" else "INATIVO"
+    return f"""<section class="panel health-panel">
+  <div class="doctor-card">
   <div class="health-ring"><strong>{available}/{service_count}</strong>
     <span>Serviços disponíveis</span></div>
   <div><span class="eyebrow">Application Health</span><h2>Saúde dos Serviços</h2>
   <p>Disponibilidade local de Workspace, Mission e Memory Services.</p>
   <span class="pill {css_class}">{status}</span>
-  <p class="doctor-disclaimer">Este indicador não substitui o Genesis Doctor.</p></div>
+  </div></div>
+  <div class="health-facts">
+    <div>{_icon('storage')}<span>SQLite conectado</span><strong>{sqlite_connected}</strong></div>
+    <div>{_icon('health')}<span>Modo persistente</span><strong>{persistent_mode}</strong></div>
+    <div>{_icon('workspaces')}<span>Armazenamento</span><strong>{escape(storage)}</strong></div>
+  </div>
+  <p class="doctor-disclaimer">Indicador operacional. Não substitui o Genesis Doctor.</p>
 </section>"""
 
 
