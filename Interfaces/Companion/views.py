@@ -17,16 +17,16 @@ from Interfaces.Workspace import render_workspace_page
 
 _ROOT = Path(__file__).resolve().parent
 _PAGE_TITLES = {
-    "dashboard": "Dashboard",
+    "dashboard": "Command Center",
     "workspaces": "Workspaces",
-    "projects": "Projetos",
+    "projects": "Projects",
     "missions": "Missões",
-    "memory": "Memórias",
+    "memory": "Memory",
     "executions": "Execuções",
     "doctor": "Application Health",
-    "settings": "Configurações",
+    "settings": "Settings",
     "intelligence": "Intelligence",
-    "remodeling": "Remodelações",
+    "remodeling": "Remodeling",
 }
 
 
@@ -51,7 +51,7 @@ def render_page(
     remodeling_proposals: tuple[Any, ...] = (),
     remodeling_proposal: Any | None = None,
 ) -> str:
-    title = _PAGE_TITLES.get(page, "Dashboard")
+    title = _PAGE_TITLES.get(page, "Command Center")
     content = _page_content(
         page=page,
         result=result,
@@ -84,8 +84,10 @@ def render_page(
         services_available=_services_available(dashboard),
         health_class=_health_class(dashboard),
         sidebar=_render_sidebar(page),
+        context_label=_context_label(page, dashboard),
         page_title=escape(title),
         page_subtitle=_page_subtitle(page),
+        page_action=_page_action(page),
         content=content,
     )
 
@@ -157,16 +159,13 @@ def _page_content(**context) -> str:
 
 def _render_sidebar(active_page: str) -> str:
     items = (
-        ("dashboard", "/", "dashboard", "Dashboard"),
-        ("workspaces", "/workspaces", "workspaces", "Workspaces"),
-        ("projects", "/projects", "projects", "Projetos"),
-        ("missions", "/missions", "missions", "Missões"),
-        ("memory", "/memory", "memory", "Memórias"),
-        ("executions", "/executions", "executions", "Execuções"),
+        ("dashboard", "/", "dashboard", "Command Center"),
+        ("projects", "/projects", "projects", "Projects"),
         ("intelligence", "/intelligence", "intelligence", "Intelligence"),
-        ("remodeling", "/remodeling", "remodeling", "Remodelações"),
-        ("doctor", "/doctor", "health", "Saúde dos Serviços"),
-        ("settings", "/settings", "settings", "Configurações"),
+        ("memory", "/memory", "memory", "Memory"),
+        ("remodeling", "/remodeling", "remodeling", "Remodeling"),
+        ("settings", "/settings", "settings", "Settings"),
+        ("doctor", "/doctor", "health", "Application Health"),
     )
     return "".join(
         f'<a class="nav-item{" active" if key == active_page else ""}" '
@@ -178,6 +177,32 @@ def _render_sidebar(active_page: str) -> str:
 
 def _aria_current(item: str, active_page: str) -> str:
     return ' aria-current="page"' if item == active_page else ""
+
+
+def _context_label(
+    page: str,
+    dashboard: CompanionDashboard | None,
+) -> str:
+    workspace = escape(_active_workspace_name(dashboard))
+    title = escape(_PAGE_TITLES.get(page, "Command Center"))
+    return f"{workspace} / {title}"
+
+
+def _page_action(page: str) -> str:
+    actions = {
+        "dashboard": ("#new-mission", "Nova missão"),
+        "workspaces": ("#workspaces", "Novo Workspace"),
+        "projects": ("#new-project", "Criar Project"),
+        "missions": ("#new-mission", "Criar Mission"),
+        "memory": ("#new-memory", "Guardar Memory"),
+        "executions": ("/missions", "Nova Mission"),
+        "intelligence": ("#new-intelligence", "Novo pedido"),
+        "remodeling": ("#new-brief", "Novo Brief"),
+        "settings": ("/", "Voltar ao trabalho"),
+        "doctor": ("/doctor", "Atualizar estado"),
+    }
+    href, label = actions.get(page, ("/", "Ir ao Command Center"))
+    return f'<a class="button-link primary-button" href="{href}">{label}</a>'
 
 
 def _icon(name: str) -> str:
@@ -226,7 +251,7 @@ def _health_class(dashboard: CompanionDashboard | None) -> str:
 
 def _page_subtitle(page: str) -> str:
     subtitles = {
-        "dashboard": "Visão operacional do seu Genesis local",
+        "dashboard": "O que precisa da sua atenção agora",
         "workspaces": "Organize missões e memórias por contexto",
         "projects": "Organize obras, clientes e missões reais",
         "missions": "Crie, planeje e execute objetivos",
@@ -246,7 +271,7 @@ def _render_dashboard(
     result: Result | None,
 ) -> str:
     if dashboard is None:
-        return '<section class="panel error">Dashboard indisponível.</section>'
+        return '<section class="panel error">Command Center indisponível.</section>'
     active = dashboard.active_workspace
     active_name = active.name if active is not None else "Nenhum Workspace"
     metrics = (
@@ -334,7 +359,7 @@ def _render_projects(
       <thead><tr><th>Projeto</th><th>Cliente</th><th>Status</th>
       <th>Criado</th></tr></thead><tbody>{rows}</tbody></table></div>"""
     return f"""<section class="split-grid projects-layout">
-  <article class="panel"><span class="eyebrow">Nova obra</span>
+  <article class="panel" id="new-project"><span class="eyebrow">Nova obra</span>
     <h2>Criar projeto</h2>{_render_feedback(result)}
     <form method="post" action="/projects" class="stack-form">
       <input type="hidden" name="workspace_id" value="{escape(workspace_id)}">
@@ -409,7 +434,7 @@ def _render_missions(
         for mission in missions
     ) or _empty_state("Nenhuma missão neste Workspace.")
     return f"""<section class="split-grid missions-layout">
-  <article class="panel"><span class="eyebrow">Novo objetivo</span>
+  <article class="panel" id="new-mission"><span class="eyebrow">Novo objetivo</span>
     <h2>Criar missão</h2>{_render_feedback(result)}{_mission_form(active)}</article>
   <article class="panel"><span class="eyebrow">Histórico local</span>
     <h2>Missões</h2><div class="card-list">{cards}</div></article>
@@ -448,7 +473,7 @@ def _render_memory(
   </form>
 </section>
 <section class="split-grid memory-layout">
-  <article class="panel"><span class="eyebrow">Registro local</span>
+  <article class="panel" id="new-memory"><span class="eyebrow">Registro local</span>
     <h2>Nova memória</h2>{_render_feedback(result)}
     <form method="post" action="/memory" class="stack-form">
       <input type="hidden" name="workspace_id" value="{escape(workspace_id)}">
@@ -551,7 +576,7 @@ def _render_intelligence(
   <span class="status-dot">Padrão · Somente gratuito</span>
 </section>
 <section class="split-grid intelligence-layout">
-  <article class="panel"><span class="eyebrow">Novo pedido</span>
+  <article class="panel" id="new-intelligence"><span class="eyebrow">Novo pedido</span>
     <h2>Encontrar provider</h2>{_render_feedback(result)}
     <form method="post" action="/intelligence/route"
       class="stack-form intelligence-form">
@@ -704,7 +729,7 @@ def _render_remodeling(
 </section>
 {_render_feedback(result)}
 <section class="split-grid remodeling-layout">
-  <article class="panel"><span class="eyebrow">Etapa 1</span><h2>Novo brief</h2>
+  <article class="panel" id="new-brief"><span class="eyebrow">Etapa 1</span><h2>Novo brief</h2>
     <form method="post" action="/remodeling/briefs" class="stack-form">
       <div class="field"><label for="remodel-workspace">Workspace</label>
         <select id="remodel-workspace" name="workspace_id" required>{workspace_options}</select></div>

@@ -1,6 +1,29 @@
 # Blueprint — Genesis Companion
 
-**Versão:** 0.4
+**Versão:** 0.5
+
+## App Shell v1 — Product Experience
+
+O Companion adota Genesis Continuum como base visual comum sem alterar rotas,
+contratos ou conteúdo funcional:
+
+- Sidebar com Command Center, Projects, Intelligence, Memory, Remodeling,
+  Settings e Application Health;
+- item ativo identificado por forma, contraste e `aria-current`;
+- ícones SVG próprios e navegação integral por teclado;
+- Header contextual com tela, Workspace, armazenamento, serviços, versão e ação
+  principal;
+- tokens para cor, tipografia, espaço, radius, sombra, motion, z-index e
+  breakpoints;
+- componentes compartilhados para controles, cards, badges, tabelas, feedback,
+  progresso, Timeline, estatísticas e títulos de página;
+- desktop, tablet e mobile sem rolagem horizontal global;
+- estados loading, empty, error, success, degraded e disabled;
+- HTML semântico, skip link, foco visível e movimento reduzido.
+
+App Shell v1 altera somente apresentação. Workspaces, Missions e Executions
+continuam acessíveis por suas rotas e por ações contextuais, embora não ocupem a
+navegação primária.
 
 ## Objetivo
 

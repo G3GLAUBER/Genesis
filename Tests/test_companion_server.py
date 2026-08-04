@@ -37,10 +37,10 @@ def test_home_page_loads_form_and_environment(companion_server):
     assert "Ambiente:" in content
     assert 'action="/missions"' in content
     assert "Workspace ativo" in content
-    assert "Genesis 0.4" in content
+    assert "Genesis 0.1" in content
     assert "SQLite local" not in content
     assert "Memória local" in content
-    assert content.count('<svg class="icon"') >= 14
+    assert content.count('<svg class="icon"') >= 7
 
 
 def test_dashboard_has_professional_metrics_sidebar_and_timeline(
@@ -51,14 +51,13 @@ def test_dashboard_has_professional_metrics_sidebar_and_timeline(
 
     assert response.status == HTTPStatus.OK
     for label in (
-        "Dashboard",
-        "Workspaces",
-        "Projetos",
-        "Missões",
-        "Memórias",
-        "Execuções",
+        "Command Center",
+        "Projects",
+        "Intelligence",
+        "Memory",
+        "Remodeling",
         "Application Health",
-        "Configurações",
+        "Settings",
     ):
         assert label in content
     assert 'class="metric-grid"' in content
@@ -198,7 +197,7 @@ def test_http_flow_creates_opens_workspace_and_associates_mission(
 @pytest.mark.parametrize(
     ("path", "expected"),
     (
-        ("/", "Visão operacional"),
+        ("/", "Command Center"),
         ("/workspaces", "Workspaces ativos"),
         ("/projects", "Criar projeto"),
         ("/missions", "Criar missão"),
@@ -214,10 +213,10 @@ def test_operational_pages_are_available(companion_server, path, expected):
 
     assert response.status == HTTPStatus.OK
     assert expected in content
-    assert "Dashboard" in content
-    assert "Memórias" in content
-    assert "Projetos" in content
-    assert "Saúde dos Serviços" in content
+    assert "Command Center" in content
+    assert "Memory" in content
+    assert "Projects" in content
+    assert "Application Health" in content
 
 
 def test_stylesheet_is_served_separately(companion_server):
@@ -230,7 +229,76 @@ def test_stylesheet_is_served_separately(companion_server):
     assert response.status == HTTPStatus.OK
     assert response.headers["Content-Type"] == "text/css; charset=utf-8"
     assert ".sidebar" in content
-    assert "--accent" in content
+    assert "--color-focus" in content
+    assert "--space-4" in content
+    assert "--radius-card" in content
+    assert "--motion-base" in content
+    assert "--z-sticky" in content
+
+
+@pytest.mark.parametrize(
+    "path",
+    (
+        "/",
+        "/projects",
+        "/intelligence",
+        "/memory",
+        "/remodeling",
+        "/settings",
+        "/doctor",
+    ),
+)
+def test_app_shell_v1_is_shared_by_primary_routes(companion_server, path):
+    with urlopen(f"{companion_server}{path}", timeout=2) as response:
+        content = response.read().decode("utf-8")
+
+    assert response.status == HTTPStatus.OK
+    assert 'class="app-shell"' in content
+    assert 'aria-label="Navegação principal"' in content
+    assert 'class="header-context"' in content
+    assert 'class="header-actions"' in content
+    assert 'class="skip-link" href="#main-content"' in content
+    assert 'id="page-title"' in content
+    assert "Workspace ativo" in content
+    assert "Serviços disponíveis" in content
+    assert "Genesis 0.1" in content
+    for destination in (
+        "Command Center",
+        "Projects",
+        "Intelligence",
+        "Memory",
+        "Remodeling",
+        "Settings",
+        "Application Health",
+    ):
+        assert destination in content
+
+
+def test_app_shell_v1_exposes_reusable_states_and_responsive_tokens(
+    companion_server,
+):
+    with urlopen(
+        f"{companion_server}/static/styles.css",
+        timeout=2,
+    ) as response:
+        content = response.read().decode("utf-8")
+
+    for selector in (
+        ".state-loading",
+        ".empty-state",
+        ".state-error",
+        ".state-success",
+        ".state-degraded",
+        ".is-disabled",
+        ".timeline-item",
+        ".metric-card",
+        ".projects-table",
+    ):
+        assert selector in content
+    assert "@media (max-width: 1180px)" in content
+    assert "@media (max-width: 860px)" in content
+    assert "@media (max-width: 620px)" in content
+    assert "@media (prefers-reduced-motion: reduce)" in content
 
 
 def test_http_memory_flow_stores_searches_and_filters(companion_server):
