@@ -28,14 +28,15 @@ def companion_server():
         assert thread.is_alive() is False
 
 
-def test_home_page_loads_form_and_environment(companion_server):
+def test_home_page_loads_orientation_and_environment(companion_server):
     with urlopen(f"{companion_server}/", timeout=2) as response:
         content = response.read().decode("utf-8")
 
     assert response.status == HTTPStatus.OK
     assert "Gênesis" in content
     assert "Ambiente:" in content
-    assert 'action="/missions"' in content
+    assert "Veja o que merece sua atenção agora." in content
+    assert 'href="/projects#new-project">Criar primeiro projeto</a>' in content
     assert "Workspace ativo" in content
     assert "Genesis 0.1" in content
     assert "SQLite local" not in content
@@ -43,7 +44,7 @@ def test_home_page_loads_form_and_environment(companion_server):
     assert content.count('<svg class="icon"') >= 7
 
 
-def test_dashboard_has_professional_metrics_sidebar_and_timeline(
+def test_command_center_has_attention_intelligence_and_timeline(
     companion_server,
 ):
     with urlopen(f"{companion_server}/", timeout=2) as response:
@@ -60,12 +61,13 @@ def test_dashboard_has_professional_metrics_sidebar_and_timeline(
         "Settings",
     ):
         assert label in content
-    assert 'class="metric-grid"' in content
-    assert 'class="dashboard-grid"' in content
+    assert 'id="attention-title">Atenção agora</h2>' in content
+    assert 'class="action-overview"' in content
+    assert "Genesis Intelligence" in content
     assert "Timeline" in content
 
 
-def test_redesign_v2_exposes_context_actions_and_accessibility(
+def test_command_center_exposes_secondary_actions_and_accessibility(
     companion_server,
 ):
     with urlopen(f"{companion_server}/", timeout=2) as response:
@@ -76,12 +78,13 @@ def test_redesign_v2_exposes_context_actions_and_accessibility(
     assert 'id="main-content"' in content
     assert 'aria-current="page"' in content
     assert "Serviços disponíveis" in content
-    assert 'class="dashboard-actions"' in content
-    assert 'href="/workspaces">+ Workspace</a>' in content
-    assert 'href="/projects">+ Projeto</a>' in content
-    assert 'href="/memory">+ Memória</a>' in content
-    assert 'href="#new-mission">Nova missão</a>' in content
-    assert 'class="projects-table compact-table"' in content
+    assert 'class="secondary-actions"' in content
+    assert 'href="/workspaces">Workspace</a>' in content
+    assert 'href="/projects">Projeto</a>' in content
+    assert 'href="/memory">Memória</a>' in content
+    assert content.count('class="button-link primary-button"') == 1
+    assert content.count("<small>Workspace ativo</small>") == 1
+    assert 'aria-labelledby="attention-title"' in content
 
 
 def test_empty_projects_page_keeps_table_structure(companion_server):
@@ -301,6 +304,39 @@ def test_app_shell_v1_exposes_reusable_states_and_responsive_tokens(
     assert "@media (prefers-reduced-motion: reduce)" in content
 
 
+def test_empty_command_center_explains_timeline_and_onboarding(
+    companion_server,
+):
+    with urlopen(f"{companion_server}/", timeout=2) as response:
+        content = response.read().decode("utf-8")
+
+    assert response.status == HTTPStatus.OK
+    assert "Construa seu primeiro fluxo" in content
+    assert "Crie um Workspace." in content
+    assert "Crie um Projeto." in content
+    assert "Registre sua primeira missão ou memória." in content
+    assert (
+        "O Genesis registra decisões, missões, memórias e projetos para que "
+        "você nunca perca contexto."
+    ) in content
+    assert "Genesis Intelligence" in content
+
+
+def test_command_center_is_structurally_responsive_and_has_one_primary_cta(
+    companion_server,
+):
+    with urlopen(f"{companion_server}/", timeout=2) as response:
+        content = response.read().decode("utf-8")
+    with urlopen(f"{companion_server}/static/styles.css", timeout=2) as response:
+        css = response.read().decode("utf-8")
+
+    assert content.count('class="button-link primary-button"') == 1
+    assert 'aria-label="Atalhos secundários"' in content
+    assert '<main class="main-content" id="main-content">' in content
+    assert ".priority-item .text-action" in css
+    assert ".action-overview, .onboarding ol" in css
+
+
 def test_http_memory_flow_stores_searches_and_filters(companion_server):
     payload = urlencode(
         {
@@ -393,9 +429,8 @@ def test_http_project_flow_creates_lists_and_updates_dashboard(companion_server)
     assert "<th>Cliente</th>" in listed
     assert "<th>Status</th>" in listed
     assert "<th>Criado</th>" in listed
-    assert "Projetos ativos" in dashboard
-    assert "Projetos concluídos" in dashboard
-    assert "Últimos projetos" in dashboard
+    assert "1 projeto(s) em andamento." in dashboard
+    assert "Este projeto ainda não tem atividade." in dashboard
     assert "Empresa Remodelações" in dashboard
 
 

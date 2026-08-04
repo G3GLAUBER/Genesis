@@ -31,6 +31,37 @@ CompanionExecution = MissionApplicationExecution
 
 
 @dataclass(frozen=True)
+class CompanionPriority:
+    rank: int
+    kind: str
+    level: str
+    title: str
+    reason: str
+    action_label: str
+    href: str
+
+
+@dataclass(frozen=True)
+class CompanionOnboardingStep:
+    title: str
+    description: str
+    complete: bool
+    href: str
+
+
+@dataclass(frozen=True)
+class CompanionCommandCenter:
+    greeting: str
+    priorities: tuple[CompanionPriority, ...]
+    onboarding_steps: tuple[CompanionOnboardingStep, ...]
+    show_onboarding: bool
+    primary_action_label: str
+    primary_action_href: str
+    intelligence_state: str
+    intelligence_description: str
+
+
+@dataclass(frozen=True)
 class CompanionDashboard:
     active_workspace: Workspace | None
     workspace_count: int
@@ -45,6 +76,7 @@ class CompanionDashboard:
     service_count: int = 3
     last_activity: datetime | None = None
     storage_label: str = "Memória local"
+    command_center: CompanionCommandCenter | None = None
 
 
 @dataclass(frozen=True)
@@ -53,6 +85,227 @@ class CompanionActivity:
     title: str
     description: str
     occurred_at: datetime
+
+
+def greeting_for_hour(hour: int) -> str:
+    """Return the calm, locale-neutral greeting used by the Command Center."""
+    if 5 <= hour < 12:
+        return "Bom dia."
+    if 12 <= hour < 19:
+        return "Boa tarde."
+    return "Boa noite."
+
+
+def _compose_command_center(
+    *,
+    active_workspace,
+    missions,
+    executions,
+    memories,
+    projects,
+    handoffs,
+    proposals,
+    application_health: str,
+    intelligence_available: bool,
+) -> CompanionCommandCenter:
+    pending_handoffs = tuple(
+        item
+        for item in handoffs
+        if getattr(getattr(item, "status", None), "value", None) == "pending"
+    )
+    pending_proposals = tuple(
+        item
+        for item in proposals
+        if getattr(getattr(item, "status", None), "value", None)
+        in ("generated", "reviewed", "approved")
+    )
+    executed_mission_ids = {
+        item.mission.id for item in executions if getattr(item, "mission", None)
+    }
+    pending_missions = tuple(
+        item for item in missions if item.id not in executed_mission_ids
+    )
+    inactive_projects = tuple(
+        item
+        for item in projects
+        if getattr(getattr(item, "status", None), "value", None)
+        in ("planning", "active", "on_hold")
+        and not getattr(item, "mission_ids", ())
+    )
+    unassociated_memories = tuple(
+        item
+        for item in memories
+        if getattr(item, "mission_id", None) is None
+        and not getattr(item, "metadata", {}).get("project_id")
+    )
+    priorities: list[CompanionPriority] = []
+
+    def add_priority(
+        rank: int,
+        kind: str,
+        level: str,
+        title: str,
+        reason: str,
+        action_label: str,
+        href: str,
+    ) -> None:
+        priorities.append(
+            CompanionPriority(
+                rank, kind, level, title, reason, action_label, href
+            )
+        )
+
+    if application_health == "DEGRADADO":
+        add_priority(
+            1,
+            "health",
+            "high",
+            "Alguns serviços precisam de atenção.",
+            "A experiência pode estar parcialmente indisponível.",
+            "Ver Application Health",
+            "/doctor",
+        )
+    if pending_handoffs:
+        add_priority(
+            2,
+            "handoff",
+            "high",
+            "Há um handoff aguardando resposta.",
+            "O Genesis precisa da sua resposta para manter a decisão em movimento.",
+            "Revisar handoff",
+            "/intelligence",
+        )
+    if pending_proposals:
+        add_priority(
+            3,
+            "proposal",
+            "medium",
+            "Há uma proposta aguardando sua revisão.",
+            "Nada será aplicado sem a sua aprovação.",
+            "Revisar proposta",
+            "/remodeling",
+        )
+    if pending_missions:
+        add_priority(
+            4,
+            "mission",
+            "medium",
+            "Há uma missão pendente.",
+            "Retome o objetivo para preservar a continuidade.",
+            "Ver missões",
+            "/missions",
+        )
+    if inactive_projects:
+        project = inactive_projects[0]
+        add_priority(
+            5,
+            "project",
+            "medium",
+            "Este projeto ainda não tem atividade.",
+            f'“{project.title}” precisa de uma primeira missão.',
+            "Abrir projetos",
+            "/projects",
+        )
+    if unassociated_memories:
+        add_priority(
+            6,
+            "memory",
+            "low",
+            "Há uma memória sem associação.",
+            "Associe contexto para encontrá-la no momento certo.",
+            "Organizar Memory",
+            "/memory",
+        )
+
+    show_onboarding = not projects and not missions and not memories
+    if show_onboarding:
+        add_priority(
+            7,
+            "onboarding",
+            "low",
+            "Defina o primeiro contexto de trabalho.",
+            "Comece por um projeto para o Genesis orientar os próximos passos.",
+            "Criar primeiro projeto",
+            "/projects#new-project",
+        )
+    if not priorities:
+        add_priority(
+            8,
+            "healthy",
+            "healthy",
+            "Você está em dia.",
+            "Não há decisões ou ações pendentes neste momento.",
+            "Abrir Intelligence",
+            "/intelligence",
+        )
+
+    ordered_priorities = tuple(
+        sorted(priorities, key=lambda item: (item.rank, item.kind))[:3]
+    )
+    onboarding_steps = (
+        CompanionOnboardingStep(
+            "Crie um Workspace.",
+            "Dê um contexto claro ao seu trabalho.",
+            active_workspace is not None,
+            "/workspaces",
+        ),
+        CompanionOnboardingStep(
+            "Crie um Projeto.",
+            "Transforme uma intenção em progresso acompanhável.",
+            bool(projects),
+            "/projects#new-project",
+        ),
+        CompanionOnboardingStep(
+            "Registre sua primeira missão ou memória.",
+            "Comece a construir continuidade.",
+            bool(missions or memories),
+            "/missions#new-mission",
+        ),
+    )
+    if active_workspace is None:
+        primary_action_label = "Criar Workspace"
+        primary_action_href = "/workspaces"
+    elif not projects:
+        primary_action_label = "Criar primeiro projeto"
+        primary_action_href = "/projects#new-project"
+    elif not missions and not memories:
+        primary_action_label = "Criar primeira missão"
+        primary_action_href = "/missions#new-mission"
+    else:
+        primary_action_label = ordered_priorities[0].action_label
+        primary_action_href = ordered_priorities[0].href
+
+    if not intelligence_available:
+        intelligence_state = "Serviço indisponível"
+        intelligence_description = (
+            "Intelligence não está disponível nesta composição local."
+        )
+    elif pending_handoffs:
+        intelligence_state = "Handoff aguardando resposta"
+        intelligence_description = (
+            "Há uma decisão que depende da sua revisão antes de continuar."
+        )
+    elif pending_proposals:
+        intelligence_state = "Recomendação disponível"
+        intelligence_description = (
+            "Revise o contexto e as alternativas antes de decidir."
+        )
+    else:
+        intelligence_state = "Modo Free First ativo"
+        intelligence_description = (
+            "Nenhuma decisão pendente. O Genesis prioriza recursos gratuitos."
+        )
+
+    return CompanionCommandCenter(
+        greeting=greeting_for_hour(datetime.now().astimezone().hour),
+        priorities=ordered_priorities,
+        onboarding_steps=onboarding_steps,
+        show_onboarding=show_onboarding,
+        primary_action_label=primary_action_label,
+        primary_action_href=primary_action_href,
+        intelligence_state=intelligence_state,
+        intelligence_description=intelligence_description,
+    )
 
 
 class CompanionApplication:
@@ -290,6 +543,14 @@ class CompanionApplication:
         projects = self.list_projects(workspace_id=workspace_id)
         project_records = projects.data if projects.is_success else ()
         activities = self.timeline(workspace_id=workspace_id)
+        handoffs_result = self.list_manual_handoffs()
+        handoffs = (
+            handoffs_result.data if handoffs_result.is_success else ()
+        )
+        proposals_result = self.list_remodeling_proposals()
+        proposals = (
+            proposals_result.data if proposals_result.is_success else ()
+        )
         available_service_count = sum(
             service is not None
             for service in (
@@ -299,6 +560,22 @@ class CompanionApplication:
             )
         )
         service_count = 3
+        application_health = (
+            "DISPONÍVEL"
+            if available_service_count == service_count
+            else "DEGRADADO"
+        )
+        command_center = _compose_command_center(
+            active_workspace=active,
+            missions=missions,
+            executions=executions,
+            memories=memory_records,
+            projects=project_records,
+            handoffs=handoffs,
+            proposals=proposals,
+            application_health=application_health,
+            intelligence_available=self._intelligence_service is not None,
+        )
         return CompanionDashboard(
             active_workspace=active,
             workspace_count=len(workspaces),
@@ -314,11 +591,7 @@ class CompanionApplication:
                 for project in project_records
             ),
             recent_projects=tuple(reversed(project_records))[:3],
-            application_health=(
-                "DISPONÍVEL"
-                if available_service_count == service_count
-                else "DEGRADADO"
-            ),
+            application_health=application_health,
             available_service_count=available_service_count,
             service_count=service_count,
             last_activity=(
@@ -328,6 +601,7 @@ class CompanionApplication:
                 "SQLite local" if self._persistence_mode == "sqlite"
                 else "Memória local"
             ),
+            command_center=command_center,
         )
 
     def execute_mission(

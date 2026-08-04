@@ -13,6 +13,7 @@ from Interfaces.Companion import (
     CompanionDashboard,
     CompanionExecution,
 )
+from Interfaces.Companion.application import greeting_for_hour
 
 
 def test_previous_public_constructor_executes_without_workspace():
@@ -215,3 +216,91 @@ def test_application_health_is_degraded_without_memory_service():
     assert dashboard.application_health == "DEGRADADO"
     assert dashboard.available_service_count == 2
     assert dashboard.service_count == 3
+
+
+@pytest.mark.parametrize(
+    ("hour", "expected"),
+    ((5, "Bom dia."), (11, "Bom dia."), (12, "Boa tarde."),
+     (18, "Boa tarde."), (19, "Boa noite."), (0, "Boa noite.")),
+)
+def test_command_center_greeting_follows_local_period(hour, expected):
+    assert greeting_for_hour(hour) == expected
+
+
+def test_empty_command_center_teaches_first_steps():
+    dashboard = CompanionApplication.default(persistent=False).dashboard()
+    command_center = dashboard.command_center
+
+    assert command_center.show_onboarding is True
+    assert tuple(step.title for step in command_center.onboarding_steps) == (
+        "Crie um Workspace.",
+        "Crie um Projeto.",
+        "Registre sua primeira missão ou memória.",
+    )
+    assert command_center.primary_action_label == "Criar primeiro projeto"
+    assert command_center.priorities[0].kind == "onboarding"
+
+
+def test_command_center_limits_and_orders_priorities_deterministically():
+    application = CompanionApplication.default(persistent=False)
+    workspace = application.dashboard().active_workspace
+    application.create_project(
+        workspace_id=workspace.id,
+        title="Projeto sem missão",
+        client="Cliente",
+        address="Local",
+    )
+    application.store_memory(
+        workspace_id=workspace.id,
+        category="nota",
+        title="Memória livre",
+        content="Contexto por associar",
+    )
+    created_handoff = application.create_manual_handoff(
+        provider_id="manual-general",
+        prompt="Revisar decisão",
+        workspace_id=workspace.id,
+    )
+
+    priorities = application.dashboard().command_center.priorities
+
+    assert created_handoff.is_success is True
+    assert len(priorities) == 3
+    assert tuple(item.kind for item in priorities) == (
+        "handoff",
+        "project",
+        "memory",
+    )
+    assert tuple(item.rank for item in priorities) == tuple(
+        sorted(item.rank for item in priorities)
+    )
+
+
+def test_degraded_services_are_always_the_first_priority():
+    registry = Registry()
+    provider = FakeProvider()
+    registry.register(provider.provider_id, provider)
+    application = CompanionApplication(
+        MissionEngine(),
+        Planner(),
+        MissionExecutionEngine(
+            AIOrchestrator(registry, provider_id=provider.provider_id)
+        ),
+        provider_id=provider.provider_id,
+    )
+
+    priority = application.dashboard().command_center.priorities[0]
+
+    assert priority.kind == "health"
+    assert priority.rank == 1
+
+
+def test_command_center_with_progress_does_not_show_onboarding():
+    application = CompanionApplication.default(persistent=False)
+    application.execute_mission(title="Continuar", objective="Manter progresso")
+
+    command_center = application.dashboard().command_center
+
+    assert command_center.show_onboarding is False
+    assert command_center.priorities[0].kind == "healthy"
+    assert command_center.priorities[0].title == "Você está em dia."

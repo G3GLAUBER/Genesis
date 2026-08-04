@@ -87,7 +87,7 @@ def render_page(
         context_label=_context_label(page, dashboard),
         page_title=escape(title),
         page_subtitle=_page_subtitle(page),
-        page_action=_page_action(page),
+        page_action=_page_action(page, dashboard),
         content=content,
     )
 
@@ -183,14 +183,27 @@ def _context_label(
     page: str,
     dashboard: CompanionDashboard | None,
 ) -> str:
-    workspace = escape(_active_workspace_name(dashboard))
     title = escape(_PAGE_TITLES.get(page, "Command Center"))
-    return f"{workspace} / {title}"
+    return f"Genesis / {title}"
 
 
-def _page_action(page: str) -> str:
+def _page_action(
+    page: str,
+    dashboard: CompanionDashboard | None = None,
+) -> str:
+    if (
+        page == "dashboard"
+        and dashboard is not None
+        and dashboard.command_center is not None
+    ):
+        command_center = dashboard.command_center
+        return (
+            f'<a class="button-link primary-button" '
+            f'href="{escape(command_center.primary_action_href)}">'
+            f'{escape(command_center.primary_action_label)}</a>'
+        )
     actions = {
-        "dashboard": ("#new-mission", "Nova missão"),
+        "dashboard": ("/projects#new-project", "Começar agora"),
         "workspaces": ("#workspaces", "Novo Workspace"),
         "projects": ("#new-project", "Criar Project"),
         "missions": ("#new-mission", "Criar Mission"),
@@ -272,60 +285,114 @@ def _render_dashboard(
 ) -> str:
     if dashboard is None:
         return '<section class="panel error">Command Center indisponível.</section>'
-    active = dashboard.active_workspace
-    active_name = active.name if active is not None else "Nenhum Workspace"
-    metrics = (
-        (
-            "Projetos",
-            str(
-                dashboard.active_project_count
-                + dashboard.completed_project_count
-            ),
-            "projects",
-            f"Projetos ativos: {dashboard.active_project_count} · "
-            f"Projetos concluídos: {dashboard.completed_project_count}",
-        ),
-        ("Missões", str(dashboard.mission_count), "missions", "No Workspace ativo"),
-        ("Memórias", str(dashboard.memory_count), "memory", "Registros disponíveis"),
-        ("Execuções", str(dashboard.execution_count), "executions", "Processamentos locais"),
-        ("Workspaces", str(dashboard.workspace_count), "workspaces", active_name),
-        (
-            "Application Health",
-            dashboard.application_health,
-            "health",
-            f"{dashboard.available_service_count}/{dashboard.service_count} services",
-        ),
-    )
-    cards = "".join(
-        f'<article class="metric-card {css}"><div class="metric-icon">'
-        f'{_icon(css)}</div><div><span>{escape(label)}</span>'
-        f'<strong>{escape(value)}</strong><small>{escape(description)}</small>'
-        f'</div></article>'
-        for label, value, css, description in metrics
-    )
+    command_center = dashboard.command_center
+    if command_center is None:
+        return '<section class="panel error">Orientação indisponível.</section>'
     feedback = _render_feedback(result)
     result_content = _render_mission_result(result) if result else ""
-    return f"""<section class="dashboard-actions" aria-label="Ações rápidas">
-  <div><span class="eyebrow">Workspace atual</span><strong>{escape(active_name)}</strong></div>
-  <nav><a class="quick-link" href="/workspaces">+ Workspace</a>
-    <a class="quick-link" href="/projects">+ Projeto</a>
-    <a class="quick-link" href="/memory">+ Memória</a>
-    <a class="primary-action" href="#new-mission">Nova missão</a></nav>
+    health = ""
+    if dashboard.application_health == "DEGRADADO":
+        health = f"""<aside class="command-health state-degraded" role="status">
+  <div><strong>Application Health degradado</strong>
+    <p>{dashboard.available_service_count}/{dashboard.service_count} serviços disponíveis. Indicador operacional; não substitui o Doctor oficial.</p></div>
+  <a href="/doctor">Ver estado</a>
+</aside>"""
+    return f"""<section class="command-welcome" aria-labelledby="command-greeting">
+  <div><span class="eyebrow">Command Center</span>
+    <h2 id="command-greeting">{escape(command_center.greeting)}</h2>
+    <p>Veja o que merece sua atenção agora.</p></div>
+  <nav class="secondary-actions" aria-label="Atalhos secundários">
+    <a href="/workspaces">Workspace</a><a href="/projects">Projeto</a>
+    <a href="/memory">Memória</a></nav>
 </section>
-<section class="metric-grid" aria-label="Resumo operacional">{cards}</section>
-<section class="dashboard-grid">
-  <article class="panel mission-composer" id="new-mission">
-    <div class="panel-heading"><div><span class="eyebrow">Executar agora</span>
-      <h2>Nova missão</h2></div><span class="status-dot">Local</span></div>
-    {feedback}
-    {_mission_form(active)}
+{feedback}{health}
+<section class="attention-section" aria-labelledby="attention-title">
+  <div class="section-heading"><div><span class="eyebrow">Prioridade</span>
+    <h2 id="attention-title">Atenção agora</h2></div>
+    <small>Até 3 itens, ordenados por impacto</small></div>
+  <div class="priority-list">{_render_priorities(command_center.priorities)}</div>
+</section>
+{_render_onboarding(command_center)}
+<section class="action-overview" aria-label="Continuidade do trabalho">
+  {_action_card("Projects", dashboard.active_project_count + dashboard.completed_project_count, "Nenhum projeto ativo." if dashboard.active_project_count == 0 else f"{dashboard.active_project_count} projeto(s) em andamento.", "Criar primeiro projeto" if dashboard.active_project_count == 0 else "Continuar projetos", "/projects", "projects")}
+  {_action_card("Missões", dashboard.mission_count, "Nenhuma missão registrada." if dashboard.mission_count == 0 else f"{dashboard.mission_count} missão(ões) preservam o progresso.", "Criar primeira missão" if dashboard.mission_count == 0 else "Ver missões", "/missions", "missions")}
+  {_action_card("Memory", dashboard.memory_count, "Nenhuma memória registrada." if dashboard.memory_count == 0 else f"{dashboard.memory_count} memória(s) mantêm o contexto.", "Registrar primeira memória" if dashboard.memory_count == 0 else "Explorar Memory", "/memory", "memory")}
+</section>
+<section class="dashboard-grid command-continuity">
+  <article class="panel intelligence-focus">
+    <div class="panel-heading"><div><span class="eyebrow">Capacidade central</span>
+      <h2>Genesis Intelligence</h2></div><span class="pill">Free First</span></div>
+    <strong>{escape(command_center.intelligence_state)}</strong>
+    <p>{escape(command_center.intelligence_description)}</p>
+    <a class="text-action" href="/intelligence">Abrir Intelligence <span aria-hidden="true">→</span></a>
   </article>
   <aside class="panel activity-panel">
-    <div class="panel-heading"><div><span class="eyebrow">Timeline</span>
-      <h2>Últimas atividades</h2></div><a href="/executions">Ver execuções</a></div>
-    {_render_timeline(timeline)}
+    <div class="panel-heading"><div><span class="eyebrow">Continuidade</span>
+      <h2>Timeline</h2></div><a href="/executions">Ver atividades</a></div>
+    {_render_command_timeline(timeline, command_center.primary_action_href)}
   </aside>
-</section>{_render_recent_projects(dashboard.recent_projects)}{result_content}"""
+</section>{result_content}"""
+
+
+def _render_priorities(priorities) -> str:
+    return "".join(
+        f'<article class="priority-item priority-{escape(item.level)}">'
+        f'<div class="priority-signal" aria-hidden="true"></div><div>'
+        f'<span class="priority-level">{escape(item.level)}</span>'
+        f'<h3>{escape(item.title)}</h3><p>{escape(item.reason)}</p></div>'
+        f'<a class="text-action" href="{escape(item.href)}">'
+        f'{escape(item.action_label)} <span aria-hidden="true">→</span></a></article>'
+        for item in priorities
+    )
+
+
+def _render_onboarding(command_center) -> str:
+    if not command_center.show_onboarding:
+        return ""
+    completed = sum(step.complete for step in command_center.onboarding_steps)
+    steps = "".join(
+        f'<li class="onboarding-step{" complete" if step.complete else ""}">'
+        f'<span aria-hidden="true">{"✓" if step.complete else index}</span><div>'
+        f'<strong>{escape(step.title)}</strong><p>{escape(step.description)}</p></div>'
+        f'<a href="{escape(step.href)}">Abrir</a></li>'
+        for index, step in enumerate(command_center.onboarding_steps, 1)
+    )
+    return f"""<section class="panel onboarding" aria-labelledby="onboarding-title">
+  <div class="panel-heading"><div><span class="eyebrow">Primeiros passos</span>
+    <h2 id="onboarding-title">Construa seu primeiro fluxo</h2></div>
+    <span class="onboarding-progress">{completed}/3</span></div>
+  <progress max="3" value="{completed}">{completed} de 3</progress>
+  <ol>{steps}</ol>
+</section>"""
+
+
+def _action_card(
+    label: str,
+    count: int,
+    state: str,
+    action: str,
+    href: str,
+    icon: str,
+) -> str:
+    return f"""<article class="action-card">
+  <div class="action-card-icon">{_icon(icon)}</div><div class="action-card-copy">
+    <div><h3>{escape(label)}</h3><span>{count}</span></div>
+    <p>{escape(state)}</p><a href="{href}">{escape(action)} <span aria-hidden="true">→</span></a>
+  </div></article>"""
+
+
+def _render_command_timeline(
+    activities: tuple[CompanionActivity, ...],
+    start_href: str,
+) -> str:
+    if activities:
+        return _render_timeline(activities[:6])
+    return f"""<div class="timeline-empty empty-state">
+  <div class="metric-icon">{_icon("executions")}</div>
+  <strong>Seu contexto começa aqui.</strong>
+  <p>O Genesis registra decisões, missões, memórias e projetos para que você nunca perca contexto.</p>
+  <a class="text-action" href="{escape(start_href)}">Começar agora <span aria-hidden="true">→</span></a>
+</div>"""
 
 
 def _render_recent_projects(projects: tuple[Any, ...]) -> str:

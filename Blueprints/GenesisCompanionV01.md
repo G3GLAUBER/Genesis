@@ -70,9 +70,16 @@ Planning, Execution e AI continuam como fontes oficiais das regras de negócio.
 
 ## Interface Redesign v2
 
-- dashboard compacto, orientado a tarefas e sem espaços vazios excessivos;
-- ações rápidas para Workspace, Project, Memory e Mission;
-- projetos recentes em tabela e últimas atividades em timeline lateral;
+- Command Center orientado a atenção, contexto, prioridade, continuidade e
+  próxima ação, sem usar métricas como hierarquia principal;
+- um único CTA principal contextual e atalhos secundários para Workspace,
+  Project e Memory;
+- até três prioridades determinísticas, ordenadas por impacto e sem execução
+  automática de recomendações;
+- onboarding local em três passos quando ainda não há Projects, Missions ou
+  Memories, sem persistência adicional;
+- Genesis Intelligence em destaque e timeline educativa quando não há
+  atividade;
 - header contextual com Workspace, armazenamento, versão e disponibilidade dos
   Application Services;
 - estados de foco visíveis, navegação semântica e link para saltar ao conteúdo;
@@ -81,7 +88,7 @@ Planning, Execution e AI continuam como fontes oficiais das regras de negócio.
 
 ## Fluxo público
 
-1. `GET /` mostra nome, versão, ambiente e formulário;
+1. `GET /` mostra o Command Center e orienta a próxima ação;
 2. `POST /missions` recebe `title` e `objective`;
 3. `MissionEngine` cria a missão;
 4. `Planner` cria três etapas demonstrativas encadeadas;
@@ -90,7 +97,8 @@ Planning, Execution e AI continuam como fontes oficiais das regras de negócio.
 
 ## Navegação operacional
 
-- `/`: dashboard, métricas, ação rápida e timeline;
+- `/`: saudação contextual, atenção agora, onboarding, continuidade,
+  Intelligence e timeline;
 - `/workspaces`: listagem, criação e seleção de Workspace;
 - `/projects`: listagem e criação de projetos do Workspace ativo;
 - `/missions`: criação, execução, listagem e status;
@@ -152,6 +160,11 @@ Endereço padrão: `http://127.0.0.1:8000/`.
 - Workspaces, Projects e Memories persistem em SQLite no bootstrap padrão;
 - Application Health deriva da presença dos três Application Services e exibe
   `DISPONÍVEL` ou `DEGRADADO`; não executa nem substitui o Genesis Doctor;
+- as prioridades são compostas localmente a partir de dados existentes, com
+  ordem estável: saúde degradada, handoffs, propostas, missões, projetos,
+  memórias, onboarding e estado saudável;
+- recomendações apenas orientam e navegam; nenhuma ação é aplicada
+  automaticamente;
 - sem autenticação, concorrência de missões ou atualização em tempo real.
 
 ## Critérios de conclusão
@@ -170,3 +183,7 @@ Endereço padrão: `http://127.0.0.1:8000/`.
 - [x] métricas e timeline por Workspace ativo;
 - [x] HTML e CSS em arquivos separados;
 - [x] compatibilidade das rotas e APIs anteriores.
+- [x] Command Center orientado à pergunta “O que merece minha atenção agora?”;
+- [x] máximo de três prioridades com ordenação determinística;
+- [x] um único CTA principal e Workspace ativo sem repetição no corpo;
+- [x] onboarding, Intelligence e timeline vazia com orientação acionável.
