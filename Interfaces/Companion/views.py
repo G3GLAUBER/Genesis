@@ -21,6 +21,7 @@ _PAGE_TITLES = {
     "workspaces": "Workspaces",
     "projects": "Projects",
     "missions": "Missões",
+    "mission_copilot": "Mission Copilot",
     "memory": "Memory",
     "executions": "Execuções",
     "doctor": "Application Health",
@@ -50,6 +51,9 @@ def render_page(
     remodeling_briefs: tuple[Any, ...] = (),
     remodeling_proposals: tuple[Any, ...] = (),
     remodeling_proposal: Any | None = None,
+    mission_copilot_request: Any | None = None,
+    mission_copilot_handoff: Any | None = None,
+    mission_copilot_result: Any | None = None,
 ) -> str:
     title = _PAGE_TITLES.get(page, "Command Center")
     content = _page_content(
@@ -70,6 +74,9 @@ def render_page(
         remodeling_briefs=remodeling_briefs,
         remodeling_proposals=remodeling_proposals,
         remodeling_proposal=remodeling_proposal,
+        mission_copilot_request=mission_copilot_request,
+        mission_copilot_handoff=mission_copilot_handoff,
+        mission_copilot_result=mission_copilot_result,
     )
     template = Template(
         (_ROOT / "templates" / "layout.html").read_text(encoding="utf-8")
@@ -110,6 +117,13 @@ def _page_content(**context) -> str:
             context["executions"],
             context["result"],
             context["dashboard"],
+        )
+    if page == "mission_copilot":
+        return _render_mission_copilot(
+            context["mission_copilot_request"],
+            context["mission_copilot_handoff"],
+            context["mission_copilot_result"],
+            context["result"],
         )
     if page == "projects":
         return _render_projects(
@@ -154,6 +168,7 @@ def _page_content(**context) -> str:
         context["dashboard"],
         context["timeline"],
         context["result"],
+        context["projects"],
     )
 
 
@@ -207,6 +222,7 @@ def _page_action(
         "workspaces": ("#workspaces", "Novo Workspace"),
         "projects": ("#new-project", "Criar Project"),
         "missions": ("#new-mission", "Criar Mission"),
+        "mission_copilot": ("/", "Command Center"),
         "memory": ("#new-memory", "Guardar Memory"),
         "executions": ("/missions", "Nova Mission"),
         "intelligence": ("#new-intelligence", "Novo pedido"),
@@ -268,6 +284,7 @@ def _page_subtitle(page: str) -> str:
         "workspaces": "Organize missões e memórias por contexto",
         "projects": "Organize obras, clientes e missões reais",
         "missions": "Crie, planeje e execute objetivos",
+        "mission_copilot": "Contexto, decisão e resultado com revisão humana",
         "memory": "Consulte o conhecimento operacional do Workspace",
         "executions": "Acompanhe resultados e providers",
         "doctor": "Disponibilidade local dos Application Services",
@@ -282,6 +299,7 @@ def _render_dashboard(
     dashboard: CompanionDashboard | None,
     timeline: tuple[CompanionActivity, ...],
     result: Result | None,
+    projects: tuple[Any, ...],
 ) -> str:
     if dashboard is None:
         return '<section class="panel error">Command Center indisponível.</section>'
@@ -318,6 +336,7 @@ def _render_dashboard(
   {_action_card("Missões", dashboard.mission_count, "Nenhuma missão registrada." if dashboard.mission_count == 0 else f"{dashboard.mission_count} missão(ões) preservam o progresso.", "Criar primeira missão" if dashboard.mission_count == 0 else "Ver missões", "/missions", "missions")}
   {_action_card("Memory", dashboard.memory_count, "Nenhuma memória registrada." if dashboard.memory_count == 0 else f"{dashboard.memory_count} memória(s) mantêm o contexto.", "Registrar primeira memória" if dashboard.memory_count == 0 else "Explorar Memory", "/memory", "memory")}
 </section>
+{_render_mission_copilot_form(dashboard, projects)}
 <section class="dashboard-grid command-continuity">
   <article class="panel intelligence-focus">
     <div class="panel-heading"><div><span class="eyebrow">Capacidade central</span>
@@ -332,6 +351,162 @@ def _render_dashboard(
     {_render_command_timeline(timeline, command_center.primary_action_href)}
   </aside>
 </section>{result_content}"""
+
+
+def _render_mission_copilot_form(
+    dashboard: CompanionDashboard,
+    projects: tuple[Any, ...],
+) -> str:
+    active = dashboard.active_workspace
+    workspace_field = (
+        f'<input type="hidden" name="workspace_id" value="{escape(active.id)}">'
+        if active is not None
+        else ""
+    )
+    project_options = "".join(
+        f'<option value="{escape(project.id)}">{escape(project.title)}</option>'
+        for project in projects
+    )
+    return f"""<section class="panel mission-copilot-composer" id="mission-copilot"
+  aria-labelledby="mission-copilot-title">
+  <div class="panel-heading"><div><span class="eyebrow">Resultado concreto</span>
+    <h2 id="mission-copilot-title">Criar missão com Intelligence</h2></div>
+    <span class="pill">FREE ONLY</span></div>
+  <p class="section-intro">O Genesis reúne o contexto e prepara um prompt. Você escolhe quando e onde usá-lo; nenhuma ação é automática.</p>
+  <form method="post" action="/missions" class="stack-form copilot-form">
+    <input type="hidden" name="experience" value="mission_copilot">
+    {workspace_field}
+    <div class="field"><label for="copilot-title">Missão</label>
+      <input id="copilot-title" name="title" required maxlength="160"
+        placeholder="O que precisa ser realizado?"></div>
+    <div class="field"><label for="copilot-project">Project <span class="muted">opcional</span></label>
+      <select id="copilot-project" name="project_id"><option value="">Sem Project</option>{project_options}</select></div>
+    <div class="field form-span"><label for="copilot-objective">Objetivo</label>
+      <textarea id="copilot-objective" name="objective" required maxlength="2000"
+        placeholder="Qual resultado esta missão deve produzir?"></textarea></div>
+    <div class="field"><label for="copilot-constraints">Constraints <span class="muted">separadas por vírgula</span></label>
+      <input id="copilot-constraints" name="constraints" maxlength="1000"
+        placeholder="Prazo, orçamento, limites conhecidos"></div>
+    <div class="field"><label for="copilot-expected">Resultado esperado</label>
+      <input id="copilot-expected" name="expected_result" maxlength="1000"
+        placeholder="Como será um resultado útil?"></div>
+    <button type="submit">Preparar missão com Intelligence <span>→</span></button>
+  </form>
+</section>"""
+
+
+def _render_mission_copilot(
+    request: Any | None,
+    handoff: Any | None,
+    copilot_result: Any | None,
+    feedback: Result | None,
+) -> str:
+    if request is None:
+        return f"""{_render_feedback(feedback)}
+<section class="panel error"><h2>Missão não encontrada</h2>
+  <p>Volte ao Command Center e prepare uma nova missão.</p>
+  <a href="/#mission-copilot">Criar missão</a></section>"""
+    mission = request.mission
+    context = request.context
+    decision = request.decision
+    project = (
+        f'<a href="/projects">{escape(context.project_title)}</a>'
+        if context.project_id
+        else "Não associado"
+    )
+    constraints = "".join(
+        f"<li>{escape(item)}</li>" for item in context.constraints
+    ) or "<li>Nenhuma constraint informada.</li>"
+    memories = "".join(
+        f"<li><strong>{escape(item.title)}</strong><span>{escape(item.category)}</span></li>"
+        for item in context.memories
+    ) or "<li>Nenhuma Memory disponível neste Workspace.</li>"
+    alternatives = ", ".join(decision.alternatives) or "Nenhuma"
+    handoff_section = _render_copilot_handoff(mission.id, handoff)
+    result_section = _render_copilot_result(mission.id, copilot_result)
+    return f"""{_render_feedback(feedback)}
+<nav class="copilot-steps" aria-label="Etapas do Mission Copilot">
+  <span class="complete">1. Missão</span><span class="complete">2. Contexto</span>
+  <span class="complete">3. Decisão</span><span class="{'complete' if handoff else 'current'}">4. Handoff</span>
+  <span class="{'complete' if copilot_result else 'pending'}">5. Resultado</span>
+</nav>
+<section class="copilot-hero">
+  <div><span class="eyebrow">Mission Copilot</span><h2>{escape(mission.title)}</h2>
+    <p>{escape(mission.objective)}</p></div><span class="pill">FREE ONLY</span>
+</section>
+<section class="copilot-layout">
+  <article class="panel copilot-context"><span class="eyebrow">Contexto encontrado</span>
+    <h2>O que o Genesis considerou</h2>
+    <dl><div><dt>Workspace</dt><dd>{escape(context.workspace_name)}</dd></div>
+      <div><dt>Project</dt><dd>{project}</dd></div>
+      <div><dt>Resultado esperado</dt><dd>{escape(context.expected_result or 'Não informado')}</dd></div></dl>
+    <h3>Constraints</h3><ul>{constraints}</ul>
+    <h3>Memories relevantes</h3><ul class="context-memories">{memories}</ul>
+  </article>
+  <article class="panel routing-decision"><span class="eyebrow">Decisão explicada</span>
+    <h2>{escape(decision.selected_provider_id)}</h2>
+    <p>{escape(decision.reason)}</p>
+    <dl><div><dt>Modo</dt><dd>{escape(decision.routing_mode.value.upper())}</dd></div>
+      <div><dt>Alternativas elegíveis</dt><dd>{escape(alternatives)}</dd></div></dl>
+    <p class="human-control">O provider é uma recomendação. O Genesis não abriu sites nem enviou dados.</p>
+  </article>
+</section>
+<section class="panel copilot-prompt"><div class="panel-heading"><div>
+  <span class="eyebrow">Prompt pronto</span><h2>Copie quando estiver pronto</h2></div>
+  <span class="pill">Sem envio automático</span></div>
+  <label for="mission-prompt">Prompt preservado</label>
+  <textarea id="mission-prompt" readonly rows="14">{escape(request.prompt)}</textarea>
+</section>
+{handoff_section}{result_section}"""
+
+
+def _render_copilot_handoff(mission_id: str, handoff: Any | None) -> str:
+    if handoff is None:
+        return f"""<section class="panel copilot-next"><span class="eyebrow">Próxima etapa</span>
+  <h2>Criar Manual Handoff</h2>
+  <p>Confirme para preparar o espaço onde a resposta manual será recebida.</p>
+  <form method="post" action="/missions/{escape(mission_id)}/copilot">
+    <button type="submit">Criar handoff FREE ONLY</button></form></section>"""
+    if handoff.status.value == "completed":
+        return """<section class="panel state-success copilot-next" role="status">
+  <strong>Resposta manual recebida.</strong><p>O conteúdo foi validado sem executar ações.</p></section>"""
+    return f"""<section class="panel copilot-response" aria-labelledby="response-title">
+  <span class="eyebrow">Handoff aguardando resposta</span><h2 id="response-title">Cole a resposta JSON</h2>
+  <p>Revise o conteúdo antes de processar. JSON inválido será rejeitado e poderá ser corrigido.</p>
+  <form method="post" action="/missions/{escape(mission_id)}/handoffs/{escape(handoff.id)}/complete" class="stack-form">
+    <div class="field form-span"><label for="copilot-response">Resposta manual</label>
+      <textarea id="copilot-response" name="response" required rows="14"
+        placeholder='{{"summary":"...","suggested_actions":[],"risks":[],"assumptions":[]}}'></textarea></div>
+    <button type="submit">Processar resposta</button>
+  </form></section>"""
+
+
+def _render_copilot_result(mission_id: str, result: Any | None) -> str:
+    if result is None:
+        return ""
+    return f"""<section class="panel copilot-result" aria-labelledby="result-title">
+  <div class="panel-heading"><div><span class="eyebrow">Resultado concreto</span>
+    <h2 id="result-title">{escape(result.summary or 'Resultado sem resumo informado')}</h2></div>
+    <span class="pill success">Revisão humana</span></div>
+  <div class="result-grid">
+    <article><h3>Próximas ações sugeridas</h3>{_render_optional_items(result.suggested_actions)}</article>
+    <article><h3>Riscos</h3>{_render_optional_items(result.risks)}</article>
+    <article><h3>Premissas</h3>{_render_optional_items(result.assumptions)}</article>
+  </div>
+  <p class="human-control">Estas ações são sugestões. Nada foi executado automaticamente.</p>
+  <div class="result-actions"><form method="post" action="/missions/{escape(mission_id)}/results/{escape(result.id)}/memory">
+    <button type="submit">Salvar resultado na memória</button></form>
+    {f'<a href="/projects">Abrir Project relacionado</a>' if result.project_id else ''}</div>
+  <details><summary>Ver resposta bruta</summary><pre>{escape(result.raw_response)}</pre></details>
+</section>"""
+
+
+def _render_optional_items(items: tuple[str, ...] | None) -> str:
+    if items is None:
+        return '<p class="muted">Não informado na resposta.</p>'
+    if not items:
+        return '<p class="muted">Nenhum item informado.</p>'
+    return "<ul>" + "".join(f"<li>{escape(item)}</li>" for item in items) + "</ul>"
 
 
 def _render_priorities(priorities) -> str:

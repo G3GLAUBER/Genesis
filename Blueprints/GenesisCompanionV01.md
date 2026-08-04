@@ -95,6 +95,14 @@ Planning, Execution e AI continuam como fontes oficiais das regras de negócio.
 5. `MissionExecutionEngine` executa o plano;
 6. a página mostra missão, plano, provider, resultados e relatório final.
 
+O fluxo legado acima permanece compatível. O Mission Copilot adiciona um fluxo
+explícito no Command Center:
+
+```text
+Mission → Context → FREE_ONLY → Manual Handoff → resposta JSON
+        → resultado revisável → Memory opcional
+```
+
 ## Navegação operacional
 
 - `/`: saudação contextual, atenção agora, onboarding, continuidade,
@@ -102,6 +110,12 @@ Planning, Execution e AI continuam como fontes oficiais das regras de negócio.
 - `/workspaces`: listagem, criação e seleção de Workspace;
 - `/projects`: listagem e criação de projetos do Workspace ativo;
 - `/missions`: criação, execução, listagem e status;
+- `/missions/{id}`: contexto, decisão, handoff e resultado do Mission Copilot;
+- `POST /missions/{id}/copilot`: cria o Manual Handoff recomendado;
+- `POST /missions/{id}/handoffs/{handoff_id}/complete`: valida a resposta JSON
+  manual e produz resultado estruturado;
+- `POST /missions/{id}/results/{result_id}/memory`: armazena o resultado em
+  Memory somente após ação explícita;
 - `/memory`: registro, histórico, pesquisa e filtro por categoria;
 - `/executions`: histórico local de execuções;
 - `/doctor`: Application Health e disponibilidade dos serviços, preservando a
@@ -166,6 +180,10 @@ Endereço padrão: `http://127.0.0.1:8000/`.
 - recomendações apenas orientam e navegam; nenhuma ação é aplicada
   automaticamente;
 - sem autenticação, concorrência de missões ou atualização em tempo real.
+- Mission Copilot usa somente `FREE_ONLY`, não chama rede, não seleciona
+  provider pago e não executa ações sugeridas;
+- resultados do Mission Copilot são voláteis; apenas a Memory opcional segue o
+  armazenamento oficial configurado.
 
 ## Critérios de conclusão
 
@@ -187,3 +205,6 @@ Endereço padrão: `http://127.0.0.1:8000/`.
 - [x] máximo de três prioridades com ordenação determinística;
 - [x] um único CTA principal e Workspace ativo sem repetição no corpo;
 - [x] onboarding, Intelligence e timeline vazia com orientação acionável.
+- [x] Mission Copilot contextual com Manual Handoff e JSON seguro;
+- [x] resultado concreto, Project associado e Memory opcional;
+- [x] nenhuma rede externa, provider pago ou execução automática.

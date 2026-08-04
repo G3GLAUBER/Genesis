@@ -11,6 +11,7 @@ from Application.services import (
     IntelligenceApplicationService,
     MemoryService,
     MissionApplicationService,
+    MissionCopilotApplicationService,
     ProjectService,
     RemodelingApplicationService,
     WorkspaceApplicationService,
@@ -270,7 +271,7 @@ def _compose_command_center(
         primary_action_href = "/projects#new-project"
     elif not missions and not memories:
         primary_action_label = "Criar primeira missão"
-        primary_action_href = "/missions#new-mission"
+        primary_action_href = "/#mission-copilot"
     else:
         primary_action_label = ordered_priorities[0].action_label
         primary_action_href = ordered_priorities[0].href
@@ -322,6 +323,7 @@ class CompanionApplication:
         project_service: ProjectService | None = None,
         intelligence_service: IntelligenceApplicationService | None = None,
         remodeling_service: RemodelingApplicationService | None = None,
+        mission_copilot_service: MissionCopilotApplicationService | None = None,
     ) -> None:
         workspace_service = (
             WorkspaceApplicationService(
@@ -338,6 +340,7 @@ class CompanionApplication:
         self._project_service = project_service
         self._intelligence_service = intelligence_service
         self._remodeling_service = remodeling_service
+        self._mission_copilot_service = mission_copilot_service
         self._persistence_mode = "memory"
         self._mission_service = MissionApplicationService(
             mission_engine,
@@ -365,8 +368,93 @@ class CompanionApplication:
         application._project_service = container.project_service
         application._intelligence_service = container.intelligence_service
         application._remodeling_service = container.remodeling_service
+        application._mission_copilot_service = container.mission_copilot_service
         application._persistence_mode = container.persistence_mode
         return application
+
+    def create_mission_copilot_request(self, **values) -> Result:
+        if self._mission_copilot_service is None:
+            return Result.error(
+                message="MissionCopilotApplicationService não está disponível"
+            )
+        return self._mission_copilot_service.create_mission_copilot_request(
+            **values
+        )
+
+    def create_mission_copilot_handoff(
+        self,
+        mission_id: str | None,
+    ) -> Result:
+        if self._mission_copilot_service is None:
+            return Result.error(
+                message="MissionCopilotApplicationService não está disponível"
+            )
+        return self._mission_copilot_service.create_handoff(mission_id)
+
+    def complete_mission_copilot_handoff(
+        self,
+        mission_id: str | None,
+        handoff_id: str | None,
+        *,
+        response: str | None,
+    ) -> Result:
+        if self._mission_copilot_service is None:
+            return Result.error(
+                message="MissionCopilotApplicationService não está disponível"
+            )
+        return self._mission_copilot_service.complete_handoff(
+            mission_id,
+            handoff_id,
+            response=response,
+        )
+
+    def build_mission_copilot_result(
+        self,
+        mission_id: str | None,
+        handoff_id: str | None,
+    ) -> Result:
+        if self._mission_copilot_service is None:
+            return Result.error(
+                message="MissionCopilotApplicationService não está disponível"
+            )
+        return self._mission_copilot_service.build_result(
+            mission_id,
+            handoff_id,
+        )
+
+    def save_mission_copilot_result_as_memory(
+        self,
+        result_id: str | None,
+    ) -> Result:
+        if self._mission_copilot_service is None:
+            return Result.error(
+                message="MissionCopilotApplicationService não está disponível"
+            )
+        return self._mission_copilot_service.save_result_as_memory(result_id)
+
+    def get_mission_copilot_request(self, mission_id: str | None) -> Result:
+        if self._mission_copilot_service is None:
+            return Result.error(
+                message="MissionCopilotApplicationService não está disponível"
+            )
+        return self._mission_copilot_service.get_request(mission_id)
+
+    def get_mission_copilot_handoff(self, mission_id: str | None) -> Result:
+        if self._mission_copilot_service is None:
+            return Result.error(
+                message="MissionCopilotApplicationService não está disponível"
+            )
+        return self._mission_copilot_service.get_handoff(mission_id)
+
+    def get_mission_copilot_result_for_mission(
+        self,
+        mission_id: str | None,
+    ) -> Result:
+        if self._mission_copilot_service is None:
+            return Result.error(
+                message="MissionCopilotApplicationService não está disponível"
+            )
+        return self._mission_copilot_service.get_result_for_mission(mission_id)
 
     def create_remodeling_brief(self, **values) -> Result:
         if self._remodeling_service is None:

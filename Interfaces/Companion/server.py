@@ -88,6 +88,22 @@ def create_server(
             if path == "/missions":
                 self._respond(HTTPStatus.OK, self._render("missions"))
                 return
+            if path.startswith("/missions/"):
+                segments = path.strip("/").split("/")
+                if len(segments) == 2:
+                    mission_id = unquote(segments[1])
+                    request = app.get_mission_copilot_request(mission_id)
+                    self._respond(
+                        HTTPStatus.OK
+                        if request.is_success
+                        else HTTPStatus.NOT_FOUND,
+                        self._render(
+                            "mission_copilot",
+                            result=None if request.is_success else request,
+                            mission_id=mission_id,
+                        ),
+                    )
+                    return
             if path == "/memory":
                 fields = parse_qs(parsed.query, keep_blank_values=True)
                 self._respond(
@@ -119,6 +135,24 @@ def create_server(
                 and path.rsplit("/", 1)[-1]
                 in {"review", "approve", "reject", "apply"}
             )
+            segments = path.strip("/").split("/")
+            is_mission_copilot_handoff = (
+                len(segments) == 3
+                and segments[0] == "missions"
+                and segments[2] == "copilot"
+            )
+            is_mission_copilot_completion = (
+                len(segments) == 5
+                and segments[0] == "missions"
+                and segments[2] == "handoffs"
+                and segments[4] == "complete"
+            )
+            is_mission_copilot_memory = (
+                len(segments) == 5
+                and segments[0] == "missions"
+                and segments[2] == "results"
+                and segments[4] == "memory"
+            )
             if path not in (
                 "/missions",
                 "/workspaces",
@@ -132,6 +166,9 @@ def create_server(
                 is_handoff_completion
                 or is_remodeling_handoff
                 or is_remodeling_action
+                or is_mission_copilot_handoff
+                or is_mission_copilot_completion
+                or is_mission_copilot_memory
             ):
                 self._respond(HTTPStatus.NOT_FOUND, "Página não encontrada")
                 return
@@ -152,6 +189,53 @@ def create_server(
 
             body = self.rfile.read(length).decode("utf-8", errors="replace")
             fields = parse_qs(body, keep_blank_values=True)
+            if is_mission_copilot_handoff:
+                mission_id = unquote(segments[1])
+                result = app.create_mission_copilot_handoff(mission_id)
+                self._respond(
+                    HTTPStatus.OK if result.is_success else HTTPStatus.BAD_REQUEST,
+                    self._render(
+                        "mission_copilot",
+                        result=result,
+                        mission_id=mission_id,
+                    ),
+                )
+                return
+            if is_mission_copilot_completion:
+                mission_id = unquote(segments[1])
+                handoff_id = unquote(segments[3])
+                completed = app.complete_mission_copilot_handoff(
+                    mission_id,
+                    handoff_id,
+                    response=_first(fields, "response"),
+                )
+                result = (
+                    app.build_mission_copilot_result(mission_id, handoff_id)
+                    if completed.is_success
+                    else completed
+                )
+                self._respond(
+                    HTTPStatus.OK if result.is_success else HTTPStatus.BAD_REQUEST,
+                    self._render(
+                        "mission_copilot",
+                        result=result,
+                        mission_id=mission_id,
+                    ),
+                )
+                return
+            if is_mission_copilot_memory:
+                mission_id = unquote(segments[1])
+                result_id = unquote(segments[3])
+                result = app.save_mission_copilot_result_as_memory(result_id)
+                self._respond(
+                    HTTPStatus.OK if result.is_success else HTTPStatus.BAD_REQUEST,
+                    self._render(
+                        "mission_copilot",
+                        result=result,
+                        mission_id=mission_id,
+                    ),
+                )
+                return
             if path == "/remodeling/briefs":
                 result = app.create_remodeling_brief(
                     project_id=_first(fields, "project_id"),
@@ -334,6 +418,27 @@ def create_server(
                 )
                 return
 
+            if _first(fields, "experience") == "mission_copilot":
+                result = app.create_mission_copilot_request(
+                    title=_first(fields, "title"),
+                    objective=_first(fields, "objective"),
+                    workspace_id=_first(fields, "workspace_id"),
+                    project_id=_first(fields, "project_id"),
+                    constraints=_csv(fields, "constraints"),
+                    expected_result=_first(fields, "expected_result"),
+                )
+                mission_id = (
+                    result.data.mission.id if result.is_success else None
+                )
+                self._respond(
+                    HTTPStatus.OK if result.is_success else HTTPStatus.BAD_REQUEST,
+                    self._render(
+                        "mission_copilot",
+                        result=result,
+                        mission_id=mission_id,
+                    ),
+                )
+                return
             result = app.execute_mission(
                 title=_first(fields, "title"),
                 objective=_first(fields, "objective"),
@@ -377,6 +482,7 @@ def create_server(
             query: str = "",
             category: str = "",
             proposal=None,
+            mission_id: str | None = None,
         ) -> str:
             dashboard = app.dashboard()
             workspace_id = (
@@ -411,6 +517,11 @@ def create_server(
             )
             briefs_result = app.list_remodeling_briefs()
             proposals_result = app.list_remodeling_proposals()
+            copilot_request = app.get_mission_copilot_request(mission_id)
+            copilot_handoff = app.get_mission_copilot_handoff(mission_id)
+            copilot_result = app.get_mission_copilot_result_for_mission(
+                mission_id
+            )
             return render_page(
                 config,
                 result,
@@ -434,6 +545,15 @@ def create_server(
                     proposals_result.data if proposals_result.is_success else ()
                 ),
                 remodeling_proposal=proposal,
+                mission_copilot_request=(
+                    copilot_request.data if copilot_request.is_success else None
+                ),
+                mission_copilot_handoff=(
+                    copilot_handoff.data if copilot_handoff.is_success else None
+                ),
+                mission_copilot_result=(
+                    copilot_result.data if copilot_result.is_success else None
+                ),
             )
 
     return ThreadingHTTPServer((host, port), CompanionHandler)

@@ -51,6 +51,13 @@ memória por compatibilidade. Missões, planos e execuções permanecem volátei
 O indicador Application Health informa somente a disponibilidade local desses
 Services. Ele não executa, representa nem substitui o Genesis Doctor oficial.
 
+O Mission Copilot é um caso de uso volátil da Application Layer. Ele cria uma
+Mission pelo contrato oficial, reúne contexto existente de Workspace, Project e
+Memory, solicita decisão determinística `FREE_ONLY` ao Intelligence Engine e
+produz resultado estruturado somente após Manual Handoff e revisão humana.
+Sugestões nunca são executadas automaticamente e o armazenamento em Memory é
+opcional e explícito.
+
 Chamadas diretas entre contratos públicos de Engines são permitidas quando um
 Blueprint específico define a composição. O EventBus é usado para comunicação
 desacoplada quando existe um evento semanticamente aprovado; ele não é uma
@@ -126,6 +133,7 @@ e Storage dependem de Blueprint e review arquitetural antes da criação.
 - apenas FakeProvider, sem rede ou credenciais;
 - Intelligence Router local, sem verificação externa de disponibilidade;
 - briefs e propostas de remodelação voláteis, com aplicação humana explícita;
+- requests e resultados do Mission Copilot voláteis, sem execução automática;
 - EventBus síncrono e em memória;
 
 ## Fluxo de evolução

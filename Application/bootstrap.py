@@ -7,6 +7,7 @@ from Application.services import (
     IntelligenceApplicationService,
     MemoryService,
     MissionApplicationService,
+    MissionCopilotApplicationService,
     ProjectService,
     RemodelingApplicationService,
     WorkspaceApplicationService,
@@ -73,6 +74,7 @@ class ApplicationContainer:
     intelligence_service: IntelligenceApplicationService | None = None
     remodeling_engine: RemodelingEngine | None = None
     remodeling_service: RemodelingApplicationService | None = None
+    mission_copilot_service: MissionCopilotApplicationService | None = None
 
 
 def bootstrap_application(
@@ -150,6 +152,13 @@ def bootstrap_application(
         workspace_service=workspace_service,
         project_service=project_service,
     )
+    mission_copilot_service = MissionCopilotApplicationService(
+        mission_service,
+        intelligence_service,
+        memory_service,
+        project_service,
+        workspace_service,
+    )
     remodeling_engine = RemodelingEngine()
     remodeling_service = RemodelingApplicationService(
         remodeling_engine,
@@ -179,6 +188,7 @@ def bootstrap_application(
         workspace_engine=workspace_engine,
         workspace_manager=workspace_manager,
         mission_service=mission_service,
+        mission_copilot_service=mission_copilot_service,
         intelligence_service=intelligence_service,
         memory_service=memory_service,
         project_service=project_service,
