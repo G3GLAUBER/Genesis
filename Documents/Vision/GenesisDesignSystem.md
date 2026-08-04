@@ -1,5 +1,9 @@
 # Genesis Design System
 
+**Versão:** 2.0 — Phase II Product Experience
+
+**UI Kit oficial:** `UIKit.md`
+
 ## Nome
 
 **Genesis Continuum** é o sistema visual do produto. Sua ideia central é uma
@@ -89,3 +93,54 @@ cores saturadas em grandes áreas. Tema nunca muda significado semântico.
 Uma linha contínua ou pulso discreto pode conectar etapas, Timeline e estados de
 Intelligence. É o gesto próprio Genesis: progresso como continuidade, não como
 velocidade.
+
+## Shell oficial
+
+- **Context Rail:** 256 px no desktop; Workspace, cinco destinos, Focus e
+  Settings;
+- **Context Header:** relação atual, título, síntese e ações do contexto;
+- **Focus Canvas:** região principal com largura máxima de 1.440 px;
+- **Insight Rail:** Recommendation, contexto ou Risk somente quando relevante;
+- **mobile:** quatro destinos inferiores e More, sem reproduzir a Sidebar.
+
+O header não apresenta versão, armazenamento ou disponibilidade técnica durante
+o trabalho cotidiano. Essas informações pertencem a Settings e Health quando
+alterarem uma decisão.
+
+## Hierarquia de superfície
+
+1. Canvas para continuidade do trabalho;
+2. Focus Surface para a decisão dominante;
+3. Content Surface para entidades e contexto;
+4. Inset Surface para detalhes relacionados;
+5. Overlay apenas para decisão curta e focada.
+
+Bordas não delimitam automaticamente toda região. Espaço e alinhamento criam a
+primeira hierarquia; cor de superfície e borda entram quando existe uma relação
+semântica real.
+
+## Estados semânticos
+
+| Estado | Cor | Linguagem | Intensidade |
+|---|---|---|---|
+| Neutral | Slate | informação estável | baixa |
+| Intelligence | Cyan | contexto e Insight | média |
+| Focus | Violet | ação e seleção | alta e rara |
+| Success | Green | resultado confirmado | proporcional |
+| Attention | Amber | decisão necessária | contextual |
+| Risk | Red | dano material possível | reservada |
+
+Todo estado combina texto, forma e, quando útil, ícone. Cor isolada nunca
+comunica significado.
+
+## Densidade
+
+Genesis oferece densidade confortável por padrão. Superfícies de decisão usam
+mais espaço; comparação e pesquisa podem ser compactas. A pessoa pode aprofundar
+detalhes sem que a visão inicial se torne uma parede de informação.
+
+## Qualidade de componentes
+
+Cada componente precisa definir conteúdo, prioridade, ação, estado vazio,
+loading, erro, responsividade, teclado e foco. O UI Kit é fechado por padrão:
+composição precede criação de novos componentes.
