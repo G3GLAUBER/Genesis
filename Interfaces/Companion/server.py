@@ -6,6 +6,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
 from Core.configuration import Configuration
+from Core.result import Result
 from Interfaces.Companion.application import CompanionApplication
 from Interfaces.Companion.views import render_page, stylesheet
 from Engines.Intelligence import RoutingMode
@@ -47,6 +48,23 @@ def create_server(
                 return
             if path == "/intelligence":
                 self._respond(HTTPStatus.OK, self._render("intelligence"))
+                return
+            if path == "/remodeling":
+                self._respond(HTTPStatus.OK, self._render("remodeling"))
+                return
+            if path.startswith("/remodeling/proposals/"):
+                proposal_id = unquote(
+                    path.removeprefix("/remodeling/proposals/")
+                )
+                proposal = app.get_remodeling_proposal(proposal_id)
+                self._respond(
+                    HTTPStatus.OK if proposal.is_success else HTTPStatus.NOT_FOUND,
+                    self._render(
+                        "remodeling",
+                        result=None if proposal.is_success else proposal,
+                        proposal=proposal.data if proposal.is_success else None,
+                    ),
+                )
                 return
             if path.startswith("/workspaces/"):
                 workspace_id = unquote(path.removeprefix("/workspaces/"))
@@ -92,6 +110,15 @@ def create_server(
                 path.startswith("/intelligence/handoffs/")
                 and path.endswith("/complete")
             )
+            is_remodeling_handoff = (
+                path.startswith("/remodeling/handoffs/")
+                and path.endswith("/complete")
+            )
+            is_remodeling_action = (
+                path.startswith("/remodeling/proposals/")
+                and path.rsplit("/", 1)[-1]
+                in {"review", "approve", "reject", "apply"}
+            )
             if path not in (
                 "/missions",
                 "/workspaces",
@@ -99,7 +126,13 @@ def create_server(
                 "/memory",
                 "/intelligence/route",
                 "/intelligence/handoffs",
-            ) and not is_handoff_completion:
+                "/remodeling/briefs",
+                "/remodeling/proposals",
+            ) and not (
+                is_handoff_completion
+                or is_remodeling_handoff
+                or is_remodeling_action
+            ):
                 self._respond(HTTPStatus.NOT_FOUND, "Página não encontrada")
                 return
 
@@ -119,6 +152,77 @@ def create_server(
 
             body = self.rfile.read(length).decode("utf-8", errors="replace")
             fields = parse_qs(body, keep_blank_values=True)
+            if path == "/remodeling/briefs":
+                result = app.create_remodeling_brief(
+                    project_id=_first(fields, "project_id"),
+                    workspace_id=_first(fields, "workspace_id"),
+                    project_type=_first(fields, "project_type"),
+                    room_length=_first(fields, "room_length"),
+                    room_width=_first(fields, "room_width"),
+                    room_height=_first(fields, "room_height"),
+                    current_condition=_first(fields, "current_condition"),
+                    desired_result=_first(fields, "desired_result"),
+                    budget_limit=_first(fields, "budget_limit"),
+                    deadline=_first(fields, "deadline"),
+                    constraints=_csv(fields, "constraints"),
+                    client_preferences=_csv(fields, "client_preferences"),
+                    known_materials=_csv(fields, "known_materials"),
+                    notes=_first(fields, "notes"),
+                )
+                self._respond(
+                    HTTPStatus.OK if result.is_success else HTTPStatus.BAD_REQUEST,
+                    self._render("remodeling", result=result),
+                )
+                return
+            if path == "/remodeling/proposals":
+                result = app.request_remodeling_proposal(
+                    _first(fields, "brief_id")
+                )
+                self._respond(
+                    HTTPStatus.OK if result.is_success else HTTPStatus.BAD_REQUEST,
+                    self._render("remodeling", result=result),
+                )
+                return
+            if is_remodeling_handoff:
+                handoff_id = unquote(
+                    path.removeprefix("/remodeling/handoffs/").removesuffix(
+                        "/complete"
+                    )
+                )
+                result = app.complete_remodeling_handoff(
+                    handoff_id, response=_first(fields, "response")
+                )
+                self._respond(
+                    HTTPStatus.OK if result.is_success else HTTPStatus.BAD_REQUEST,
+                    self._render(
+                        "remodeling",
+                        result=result,
+                        proposal=result.data if result.is_success else None,
+                    ),
+                )
+                return
+            if is_remodeling_action:
+                prefix, action = path.rsplit("/", 1)
+                proposal_id = unquote(
+                    prefix.removeprefix("/remodeling/proposals/")
+                )
+                methods = {
+                    "review": app.review_remodeling_proposal,
+                    "approve": app.approve_remodeling_proposal,
+                    "reject": app.reject_remodeling_proposal,
+                    "apply": app.apply_remodeling_proposal,
+                }
+                result = methods[action](proposal_id)
+                proposal = app.get_remodeling_proposal(proposal_id)
+                self._respond(
+                    HTTPStatus.OK if result.is_success else HTTPStatus.BAD_REQUEST,
+                    self._render(
+                        "remodeling",
+                        result=result,
+                        proposal=proposal.data if proposal.is_success else None,
+                    ),
+                )
+                return
             if path == "/intelligence/route":
                 try:
                     mode = RoutingMode(
@@ -272,6 +376,7 @@ def create_server(
             workspace=None,
             query: str = "",
             category: str = "",
+            proposal=None,
         ) -> str:
             dashboard = app.dashboard()
             workspace_id = (
@@ -304,6 +409,8 @@ def create_server(
             handoffs = (
                 handoffs_result.data if handoffs_result.is_success else ()
             )
+            briefs_result = app.list_remodeling_briefs()
+            proposals_result = app.list_remodeling_proposals()
             return render_page(
                 config,
                 result,
@@ -320,6 +427,13 @@ def create_server(
                 category=category,
                 provider_profiles=profiles,
                 manual_handoffs=handoffs,
+                remodeling_briefs=(
+                    briefs_result.data if briefs_result.is_success else ()
+                ),
+                remodeling_proposals=(
+                    proposals_result.data if proposals_result.is_success else ()
+                ),
+                remodeling_proposal=proposal,
             )
 
     return ThreadingHTTPServer((host, port), CompanionHandler)
@@ -328,6 +442,11 @@ def create_server(
 def _first(fields: dict[str, list[str]], name: str) -> str | None:
     values = fields.get(name)
     return values[0] if values else None
+
+
+def _csv(fields: dict[str, list[str]], name: str) -> tuple[str, ...]:
+    value = _first(fields, name) or ""
+    return tuple(item.strip() for item in value.split(",") if item.strip())
 
 
 def main() -> None:

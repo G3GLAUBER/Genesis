@@ -1,73 +1,159 @@
-# Gênesis — Roadmap Técnico Oficial
+# Gênesis — Roadmap Oficial
 
 Status: Canônico
-Atualizado na Sprint 0.4
+Atualizado: encerramento da FASE I — FOUNDATION
 
-Este documento define sequência e prioridade, não contratos. Cada componente ou
-mudança arquitetural continua sujeito à Constituição, aos ADRs, à Architecture e
-a Blueprint aprovado.
+Este documento governa a sequência de evolução do Genesis. Ele define fases,
+estado e critérios de transição; não autoriza funcionalidades, não substitui
+Blueprints e não altera contratos.
+
+Toda evolução continua sujeita à Constituição, aos ADRs vigentes, à Architecture,
+a Blueprint aprovado, testes, review e autorização aplicável.
 
 ## Estado atual
 
-Estão implementados e testados: fundação do Core, CLI/Doctor, AI Provider e AI
-Orchestrator com FakeProvider, Mission, Planning, Execution, Companion local,
-Workspace, Memory Foundation e Projects v1, coordenados pela Application Layer.
-O Intelligence Engine v0.1 adiciona roteamento Free First determinístico e
-handoff manual sem acesso externo.
-Workspace, Projects e Memory possuem repositories em memória e SQLite; o
-bootstrap da Application permanece em memória por compatibilidade e o Companion
-operacional seleciona SQLite explicitamente. Knowledge, Search, persistência de
-Mission/Plan/Execution, Agents e integrações reais ainda não são capacidades
-implementadas.
+O Genesis possui uma fundação modular funcional e documentada, com Core, CLI e
+Doctor, coordenação de Intelligence independente de fornecedor, Mission,
+Planning, Execution, Companion local, Workspace, Projects, Memory Foundation,
+Application Layer, persistência local aprovada e o primeiro Copilot vertical.
 
-## Genesis 0.3 — Consolidação da fundação
+O Intelligence Engine atual usa decisão determinística e Handoff manual. As
+limitações registradas na Architecture e nos Blueprints permanecem válidas.
+Capacidades ainda não implementadas não são consideradas concluídas por este
+roadmap.
 
-- 0.3.1: estabelecer autoridade documental e fontes canônicas;
-- 0.3.2: introduzir Application Layer e bootstrap centralizado;
-- 0.3.3: estabelecer o contrato oficial da Memory Foundation em memória;
-- 0.3.4: tornar o Companion a primeira Interface operacional do Genesis;
-- 0.3.5: introduzir Projects v1 para obras e projetos reais por Workspace;
-- padronizar contratos básicos, tempo e eventos sem quebrar APIs;
-- instituir verificações arquiteturais, typing, lint e cobertura.
+## Sequência oficial
 
-## Genesis 0.4 — Persistência e Memory
+```text
+FASE I — FOUNDATION
+        ↓
+FASE II — PRODUCT EXPERIENCE
+        ↓
+FASE III — BUSINESS COPILOTS
+        ↓
+FASE IV — LOCAL INTELLIGENCE
+        ↓
+FASE V — MULTI-AGENT ECOSYSTEM
+        ↓
+FASE VI — GENESIS PLATFORM
+```
 
-- aprovar o Blueprint de persistência e a evolução persistente de Memory;
-- definir ownership, repositories, transações e migrações;
-- persistir Workspace, Projects e Memory localmente;
-- manter Mission, Plan e Execution em memória nesta versão;
-- implementar Memory mínima, testável e independente de Interface;
-- [x] fundação SQLite para Workspace, Projects e Memory com migrations;
-- validar restart e integridade;
-- adiar garantias de concorrência para uma Sprint dedicada.
+## FASE I — FOUNDATION
 
-## Genesis 0.5 — Knowledge e providers reais
+**STATUS: CONCLUÍDA**
 
-- [x] estabelecer Intelligence Router Free First e Manual Handoff;
-- aprovar e implementar Knowledge Engine;
-- introduzir proveniência, versionamento e busca textual;
-- implementar um primeiro adapter real atrás de `AIProvider`;
-- definir credenciais, timeout, erros, rate limit, retry e observabilidade;
-- preservar a independência do Core e dos consumidores.
+### Objetivo da fase
 
-## Genesis 0.6 — API, Agents e plugins
+Estabelecer integridade, modularidade, contratos básicos, documentação canônica
+e independência de fornecedor suficientes para sustentar a evolução do produto.
 
-- definir contratos de Agent, ferramentas, permissões e lifecycle;
-- definir execução durável, cancelamento e retomada;
-- criar API pública versionada sobre casos de uso compartilhados;
-- definir manifest, namespaces, compatibilidade e confiança de plugins;
-- introduzir identidade e ownership como fundação de multiusuário.
+### Decisão de encerramento
 
-## Genesis 1.0 — Produto confiável
+A Foundation está concluída no escopo aprovado e implementado.
 
-- isolamento multiusuário e autorização;
-- clientes desktop e mobile consumindo contratos públicos/API;
-- backup, restore e migrações testados;
-- observabilidade, segurança, testes de carga e recuperação;
-- política formal de releases e compatibilidade.
+Este encerramento:
 
-## Adiado até a fundação correspondente
+- reconhece a fundação existente como base oficial;
+- preserva todas as limitações e débitos conhecidos;
+- não declara capacidades futuras como implementadas;
+- não altera arquitetura, contratos ou comportamento;
+- transfere a prioridade estratégica para Product Experience;
+- exige que qualquer evolução siga os gates vigentes.
 
-Agentes autônomos, plugins dinâmicos, banco vetorial, execução paralela,
-desktop, mobile e multiusuário não devem anteceder os contratos, persistência,
-segurança e isolamento previstos nas fases anteriores.
+## FASE II — PRODUCT EXPERIENCE
+
+**STATUS: PRÓXIMA**
+
+### Objetivo da fase
+
+Transformar as capacidades da Foundation numa experiência única, simples,
+acessível, confiável e orientada por progresso contínuo.
+
+### Condição de conclusão
+
+A experiência Genesis demonstra clareza, continuidade, confiança, velocidade de
+uso e progresso verificável em contexto real.
+
+## FASE III — BUSINESS COPILOTS
+
+**STATUS: FUTURA**
+
+### Objetivo da fase
+
+Aplicar a identidade e o modelo mental Genesis a domínios empresariais
+específicos, preservando uma experiência comum e controle humano.
+
+### Condição de conclusão
+
+Copilots demonstram outcomes económicos repetíveis sem fragmentar Genesis.
+
+## FASE IV — LOCAL INTELLIGENCE
+
+**STATUS: FUTURA**
+
+### Objetivo da fase
+
+Ampliar escolha, privacidade, disponibilidade e controle por Intelligence local
+quando existir benefício comprovado para o cliente.
+
+### Condição de conclusão
+
+Local Intelligence oferece valor e confiança sem criar experiência paralela ou
+expor complexidade desnecessária.
+
+## FASE V — MULTI-AGENT ECOSYSTEM
+
+**STATUS: FUTURA**
+
+### Objetivo da fase
+
+Permitir colaboração entre Agents e capacidades especializadas com permissões,
+responsabilidade, proveniência e supervisão claras.
+
+### Condição de conclusão
+
+Delegação entre Agents melhora progresso sem retirar controle humano ou
+integridade do sistema.
+
+## FASE VI — GENESIS PLATFORM
+
+**STATUS: FUTURA**
+
+### Objetivo da fase
+
+Consolidar Genesis OS como plataforma confiável para organizações, Copilots,
+Plugins e Agents em escala.
+
+### Condição de maturidade
+
+O ecossistema cresce com interoperabilidade, segurança, sustentabilidade e
+identidade consistente.
+
+## Regras de transição
+
+1. Fases avançam por outcomes demonstrados, não por calendário.
+2. Nenhuma fase autoriza implementação sem o fluxo obrigatório.
+3. Capacidades adiadas permanecem não implementadas até evidência em contrário.
+4. Mudanças arquiteturais exigem review e autoridade documental adequada.
+5. O Product Council avalia coerência de Produto e Experiência.
+6. Toda proposta passa pelo Genesis Decision Framework.
+7. Progress Continuity Rate orienta valor; métricas de conversa não encerram
+   fases.
+8. A integridade da Foundation tem prioridade sobre velocidade de expansão.
+
+## Direção de produto relacionada
+
+- North Star: `Documents/Vision/NorthStar.md`;
+- estratégia: `Documents/Vision/ProductStrategy.md`;
+- roadmap de outcomes: `Documents/Vision/ProductRoadmap.md`;
+- Vision Book: `Documents/Vision/GenesisVisionBook.md`;
+- governança: `Documents/Vision/ProductCouncil.md`;
+- framework de decisão: `Documents/Vision/DecisionFramework.md`;
+- métricas: `Documents/Vision/SuccessMetrics.md`.
+
+## Próxima decisão
+
+Iniciar formalmente o planeamento da FASE II — PRODUCT EXPERIENCE.
+
+O início exige missão da fase, escopo, critérios de sucesso, Design Review,
+Blueprints aplicáveis e plano de validação antes de qualquer implementação.

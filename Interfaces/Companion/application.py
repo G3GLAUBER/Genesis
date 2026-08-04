@@ -12,6 +12,7 @@ from Application.services import (
     MemoryService,
     MissionApplicationService,
     ProjectService,
+    RemodelingApplicationService,
     WorkspaceApplicationService,
 )
 from Core.result import Result
@@ -67,6 +68,7 @@ class CompanionApplication:
         memory_service: MemoryService | None = None,
         project_service: ProjectService | None = None,
         intelligence_service: IntelligenceApplicationService | None = None,
+        remodeling_service: RemodelingApplicationService | None = None,
     ) -> None:
         workspace_service = (
             WorkspaceApplicationService(
@@ -82,6 +84,7 @@ class CompanionApplication:
         self._memory_service = memory_service
         self._project_service = project_service
         self._intelligence_service = intelligence_service
+        self._remodeling_service = remodeling_service
         self._persistence_mode = "memory"
         self._mission_service = MissionApplicationService(
             mission_engine,
@@ -108,8 +111,77 @@ class CompanionApplication:
         application._memory_service = container.memory_service
         application._project_service = container.project_service
         application._intelligence_service = container.intelligence_service
+        application._remodeling_service = container.remodeling_service
         application._persistence_mode = container.persistence_mode
         return application
+
+    def create_remodeling_brief(self, **values) -> Result:
+        if self._remodeling_service is None:
+            return Result.error(
+                message="RemodelingApplicationService não está disponível"
+            )
+        return self._remodeling_service.create_brief(**values)
+
+    def request_remodeling_proposal(self, brief_id: str | None) -> Result:
+        if self._remodeling_service is None:
+            return Result.error(
+                message="RemodelingApplicationService não está disponível"
+            )
+        return self._remodeling_service.request_proposal(brief_id)
+
+    def complete_remodeling_handoff(
+        self, handoff_id: str | None, *, response: str | None
+    ) -> Result:
+        if self._remodeling_service is None:
+            return Result.error(
+                message="RemodelingApplicationService não está disponível"
+            )
+        completed = self._remodeling_service.complete_handoff(
+            handoff_id, response=response
+        )
+        if not completed.is_success:
+            return completed
+        return self._remodeling_service.build_proposal(handoff_id)
+
+    def get_remodeling_proposal(self, proposal_id: str | None) -> Result:
+        if self._remodeling_service is None:
+            return Result.error(
+                message="RemodelingApplicationService não está disponível"
+            )
+        return self._remodeling_service.get_proposal(proposal_id)
+
+    def list_remodeling_briefs(self) -> Result:
+        if self._remodeling_service is None:
+            return Result.error(
+                message="RemodelingApplicationService não está disponível"
+            )
+        return self._remodeling_service.list_briefs()
+
+    def list_remodeling_proposals(self) -> Result:
+        if self._remodeling_service is None:
+            return Result.error(
+                message="RemodelingApplicationService não está disponível"
+            )
+        return self._remodeling_service.list_proposals()
+
+    def review_remodeling_proposal(self, proposal_id: str | None) -> Result:
+        return self._remodeling_action("review_proposal", proposal_id)
+
+    def approve_remodeling_proposal(self, proposal_id: str | None) -> Result:
+        return self._remodeling_action("approve_proposal", proposal_id)
+
+    def reject_remodeling_proposal(self, proposal_id: str | None) -> Result:
+        return self._remodeling_action("reject_proposal", proposal_id)
+
+    def apply_remodeling_proposal(self, proposal_id: str | None) -> Result:
+        return self._remodeling_action("apply_proposal", proposal_id)
+
+    def _remodeling_action(self, method: str, proposal_id: str | None) -> Result:
+        if self._remodeling_service is None:
+            return Result.error(
+                message="RemodelingApplicationService não está disponível"
+            )
+        return getattr(self._remodeling_service, method)(proposal_id)
 
     def list_provider_profiles(self) -> Result:
         if self._intelligence_service is None:

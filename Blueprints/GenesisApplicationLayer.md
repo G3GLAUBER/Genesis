@@ -29,6 +29,8 @@ entrada e saída; Engines permanecem como fontes oficiais das regras de domínio
   restauração e associação de missões pelo contrato de Projects;
 - `IntelligenceApplicationService`: coordena catálogo, roteamento, handoffs,
   execução automática pelo AIOrchestrator e integração opcional com Memory;
+- `RemodelingApplicationService`: coordena briefs e propostas voláteis com
+  Intelligence, Mission, Projects e Memory, exigindo aprovação antes de aplicar;
 - `bootstrap_application()`: compõe Registry, FakeProvider, Engines, repositories
   e serviços; preserva memória por padrão e permite SQLite explicitamente;
 - modelos imutáveis de aplicação existem apenas para resultados agregados que

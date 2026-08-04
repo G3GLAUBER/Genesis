@@ -8,6 +8,7 @@ from Application.services import (
     MemoryService,
     MissionApplicationService,
     ProjectService,
+    RemodelingApplicationService,
     WorkspaceApplicationService,
 )
 from Core.registry import Registry
@@ -30,6 +31,7 @@ from Engines.Projects import (
     ProjectEngine,
     ProjectRepository,
 )
+from Engines.Remodeling import RemodelingEngine
 from Engines.Workspace import (
     InMemoryWorkspaceRepository,
     WorkspaceEngine,
@@ -69,6 +71,8 @@ class ApplicationContainer:
     manual_handoffs: ManualHandoffManager | None = None
     intelligence_metrics: IntelligenceMetrics | None = None
     intelligence_service: IntelligenceApplicationService | None = None
+    remodeling_engine: RemodelingEngine | None = None
+    remodeling_service: RemodelingApplicationService | None = None
 
 
 def bootstrap_application(
@@ -146,6 +150,15 @@ def bootstrap_application(
         workspace_service=workspace_service,
         project_service=project_service,
     )
+    remodeling_engine = RemodelingEngine()
+    remodeling_service = RemodelingApplicationService(
+        remodeling_engine,
+        intelligence_service,
+        mission_service,
+        project_service,
+        memory_service,
+        workspace_service,
+    )
     return ApplicationContainer(
         persistence_mode="sqlite" if use_sqlite else "memory",
         database=database,
@@ -170,6 +183,8 @@ def bootstrap_application(
         memory_service=memory_service,
         project_service=project_service,
         workspace_service=workspace_service,
+        remodeling_engine=remodeling_engine,
+        remodeling_service=remodeling_service,
     )
 
 

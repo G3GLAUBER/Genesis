@@ -81,9 +81,13 @@ Planning, Execution e AI continuam como fontes oficiais das regras de negócio.
 - `POST /intelligence/handoffs`: cria um handoff sem acessar sites externos;
 - `POST /intelligence/handoffs/{id}/complete`: registra a resposta manual e
   permite salvá-la como Memory.
+- `/remodeling`: brief, handoff Free First, proposta e orçamento preliminar;
+- `/remodeling/proposals/{id}`: revisão, aprovação, rejeição e aplicação
+  explicitamente confirmadas pelo usuário.
 
 A Interface utiliza exclusivamente `WorkspaceApplicationService`,
-`ProjectService`, `MissionApplicationService` e `MemoryService` por meio da fachada
+`ProjectService`, `MissionApplicationService`, `MemoryService`,
+`IntelligenceApplicationService` e `RemodelingApplicationService` pela fachada
 `CompanionApplication`. Não chama Engines diretamente nos fluxos operacionais.
 
 ## Plano demonstrativo

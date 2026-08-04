@@ -5,6 +5,9 @@ from Application.services import (
     MemoryService,
     MissionApplicationService,
     ProjectService,
+    RemodelingApplicationReport,
+    RemodelingApplicationService,
+    RemodelingProposalRequest,
     WorkspaceApplicationService,
 )
 
@@ -16,6 +19,9 @@ __all__ = [
     "MissionApplicationExecution",
     "MissionApplicationService",
     "ProjectService",
+    "RemodelingApplicationReport",
+    "RemodelingApplicationService",
+    "RemodelingProposalRequest",
     "WorkspaceApplicationService",
     "bootstrap_application",
 ]

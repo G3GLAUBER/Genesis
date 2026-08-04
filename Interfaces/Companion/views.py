@@ -26,6 +26,7 @@ _PAGE_TITLES = {
     "doctor": "Application Health",
     "settings": "Configurações",
     "intelligence": "Intelligence",
+    "remodeling": "Remodelações",
 }
 
 
@@ -46,6 +47,9 @@ def render_page(
     category: str = "",
     provider_profiles: tuple[Any, ...] = (),
     manual_handoffs: tuple[Any, ...] = (),
+    remodeling_briefs: tuple[Any, ...] = (),
+    remodeling_proposals: tuple[Any, ...] = (),
+    remodeling_proposal: Any | None = None,
 ) -> str:
     title = _PAGE_TITLES.get(page, "Dashboard")
     content = _page_content(
@@ -63,6 +67,9 @@ def render_page(
         category=category,
         provider_profiles=provider_profiles,
         manual_handoffs=manual_handoffs,
+        remodeling_briefs=remodeling_briefs,
+        remodeling_proposals=remodeling_proposals,
+        remodeling_proposal=remodeling_proposal,
     )
     template = Template(
         (_ROOT / "templates" / "layout.html").read_text(encoding="utf-8")
@@ -130,6 +137,17 @@ def _page_content(**context) -> str:
             context["dashboard"],
             context["projects"],
         )
+    if page == "remodeling":
+        return _render_remodeling(
+            context["workspaces"],
+            context["projects"],
+            context["remodeling_briefs"],
+            context["remodeling_proposals"],
+            context["manual_handoffs"],
+            context["remodeling_proposal"],
+            context["result"],
+            context["dashboard"],
+        )
     return _render_dashboard(
         context["dashboard"],
         context["timeline"],
@@ -146,6 +164,7 @@ def _render_sidebar(active_page: str) -> str:
         ("memory", "/memory", "memory", "Memórias"),
         ("executions", "/executions", "executions", "Execuções"),
         ("intelligence", "/intelligence", "intelligence", "Intelligence"),
+        ("remodeling", "/remodeling", "remodeling", "Remodelações"),
         ("doctor", "/doctor", "health", "Saúde dos Serviços"),
         ("settings", "/settings", "settings", "Configurações"),
     )
@@ -170,6 +189,7 @@ def _icon(name: str) -> str:
         "memory": '<path d="M8 4h8a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3zM9 9h6M9 13h6"/>',
         "executions": '<path d="m9 7 8 5-8 5z"/><circle cx="12" cy="12" r="10"/>',
         "intelligence": '<path d="M12 3a6 6 0 0 0-3 11.2V18h6v-3.8A6 6 0 0 0 12 3zM9 21h6M12 3V1M4.2 5.2 2.8 3.8M19.8 5.2l1.4-1.4"/>',
+        "remodeling": '<path d="M3 21h18M5 21V9l7-6 7 6v12M9 21v-6h6v6M8 11h2M14 11h2"/>',
         "health": '<path d="M3 12h4l2-5 4 10 2-5h6"/>',
         "settings": '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
         "storage": '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7"/>',
@@ -215,6 +235,7 @@ def _page_subtitle(page: str) -> str:
         "doctor": "Disponibilidade local dos Application Services",
         "settings": "Preferências da instância local",
         "intelligence": "Roteamento explicável com recursos gratuitos primeiro",
+        "remodeling": "Propostas preliminares com revisão humana obrigatória",
     }
     return escape(subtitles.get(page, "Genesis Companion"))
 
@@ -643,6 +664,166 @@ def _manual_handoff_card(handoff: Any) -> str:
       <span class="pill {css_class}">{escape(handoff.status.value.upper())}</span>
       <h3>{escape(handoff.provider_id)}</h3><p>{escape(handoff.prompt)}</p>
       {response}{form}</div></article>"""
+
+
+def _render_remodeling(
+    workspaces: tuple[Any, ...],
+    projects: tuple[Any, ...],
+    briefs: tuple[Any, ...],
+    proposals: tuple[Any, ...],
+    handoffs: tuple[Any, ...],
+    selected: Any | None,
+    result: Result | None,
+    dashboard: CompanionDashboard | None,
+) -> str:
+    active = dashboard.active_workspace if dashboard else None
+    workspace_options = "".join(
+        f'<option value="{escape(item.id)}"'
+        f'{" selected" if active and item.id == active.id else ""}>'
+        f'{escape(item.name)}</option>' for item in workspaces
+    )
+    project_options = "".join(
+        f'<option value="{escape(item.id)}">{escape(item.title)}</option>'
+        for item in projects
+    )
+    brief_cards = "".join(_remodeling_brief_card(item) for item in briefs)
+    proposal_cards = "".join(
+        _remodeling_proposal_link(item) for item in reversed(proposals)
+    )
+    pending = tuple(
+        item for item in handoffs
+        if item.project_id and item.status.value == "pending"
+    )
+    handoff_cards = "".join(_remodeling_handoff_card(item) for item in pending)
+    detail = _remodeling_proposal_detail(selected) if selected else ""
+    return f"""<section class="panel remodeling-hero">
+  <div><span class="eyebrow">Copilot especializado</span>
+    <h2>Remodelação com aprovação humana</h2>
+    <p>Brief → Free First → proposta → revisão → aprovação → aplicação.</p></div>
+  <span class="status-dot">Dados voláteis · orçamento preliminar</span>
+</section>
+{_render_feedback(result)}
+<section class="split-grid remodeling-layout">
+  <article class="panel"><span class="eyebrow">Etapa 1</span><h2>Novo brief</h2>
+    <form method="post" action="/remodeling/briefs" class="stack-form">
+      <div class="field"><label for="remodel-workspace">Workspace</label>
+        <select id="remodel-workspace" name="workspace_id" required>{workspace_options}</select></div>
+      <div class="field"><label for="remodel-project">Projeto</label>
+        <select id="remodel-project" name="project_id" required>{project_options}</select></div>
+      <div class="field form-span"><label for="project-type">Tipo de obra</label>
+        <input id="project-type" name="project_type" value="Casa de banho" required></div>
+      <div class="field"><label for="room-length">Comprimento (m)</label>
+        <input id="room-length" name="room_length" type="number" min="0.01" step="0.01"></div>
+      <div class="field"><label for="room-width">Largura (m)</label>
+        <input id="room-width" name="room_width" type="number" min="0.01" step="0.01"></div>
+      <div class="field"><label for="room-height">Altura (m)</label>
+        <input id="room-height" name="room_height" type="number" min="0.01" step="0.01"></div>
+      <div class="field"><label for="budget-limit">Limite orçamental EUR</label>
+        <input id="budget-limit" name="budget_limit" type="number" min="0" step="0.01"></div>
+      <div class="field form-span"><label for="current-condition">Estado atual</label>
+        <textarea id="current-condition" name="current_condition" required></textarea></div>
+      <div class="field form-span"><label for="desired-result">Resultado desejado</label>
+        <textarea id="desired-result" name="desired_result" required></textarea></div>
+      <div class="field"><label for="deadline">Prazo</label>
+        <input id="deadline" name="deadline" type="date"></div>
+      <div class="field"><label for="known-materials">Materiais, separados por vírgula</label>
+        <input id="known-materials" name="known_materials"></div>
+      <div class="field"><label for="constraints">Restrições</label>
+        <input id="constraints" name="constraints"></div>
+      <div class="field"><label for="client-preferences">Preferências</label>
+        <input id="client-preferences" name="client_preferences"></div>
+      <div class="field form-span"><label for="remodel-notes">Notas</label>
+        <textarea id="remodel-notes" name="notes"></textarea></div>
+      <button type="submit">Criar brief para revisão</button>
+    </form>
+  </article>
+  <aside class="panel"><span class="eyebrow">Etapa 2</span><h2>Briefs</h2>
+    <div class="card-list">{brief_cards or _empty_state('Nenhum brief criado.')}</div>
+  </aside>
+</section>
+<section class="split-grid remodeling-flow">
+  <article class="panel"><span class="eyebrow">Handoff manual</span>
+    <h2>Respostas JSON pendentes</h2>
+    <div class="card-list">{handoff_cards or _empty_state('Nenhum handoff pendente.')}</div>
+  </article>
+  <article class="panel"><span class="eyebrow">Revisão</span><h2>Propostas</h2>
+    <div class="card-list">{proposal_cards or _empty_state('Nenhuma proposta gerada.')}</div>
+  </article>
+</section>{detail}"""
+
+
+def _remodeling_brief_card(brief: Any) -> str:
+    missing = []
+    if brief.budget_limit is None:
+        missing.append("orçamento")
+    if brief.deadline is None:
+        missing.append("prazo")
+    gap = ", ".join(missing) or "dados essenciais preenchidos"
+    return f"""<article class="data-card"><div><span class="pill">DRAFT</span>
+      <h3>{escape(brief.project_type)}</h3><p>Lacunas visíveis: {escape(gap)}</p>
+      <form method="post" action="/remodeling/proposals">
+        <input type="hidden" name="brief_id" value="{escape(brief.id)}">
+        <button type="submit">Gerar handoff Free First</button></form></div></article>"""
+
+
+def _remodeling_handoff_card(handoff: Any) -> str:
+    return f"""<article class="data-card handoff-card"><div>
+      <span class="pill">FREE ONLY · MANUAL</span><h3>{escape(handoff.provider_id)}</h3>
+      <label for="prompt-{escape(handoff.id)}">Prompt para copiar manualmente</label>
+      <textarea id="prompt-{escape(handoff.id)}" readonly>{escape(handoff.prompt)}</textarea>
+      <form method="post" action="/remodeling/handoffs/{escape(handoff.id)}/complete">
+        <label for="remodel-response-{escape(handoff.id)}">Resposta JSON</label>
+        <textarea id="remodel-response-{escape(handoff.id)}" name="response" required></textarea>
+        <button type="submit">Validar e criar proposta</button></form></div></article>"""
+
+
+def _remodeling_proposal_link(proposal: Any) -> str:
+    return f"""<a class="data-card proposal-link"
+      href="/remodeling/proposals/{escape(proposal.id)}"><div>
+      <span class="pill status-{escape(proposal.status.value)}">{escape(proposal.status.value.upper())}</span>
+      <h3>{len(proposal.phases)} fases</h3>
+      <p>Total preliminar: {proposal.preliminary_budget.total} EUR</p></div></a>"""
+
+
+def _remodeling_proposal_detail(proposal: Any) -> str:
+    phases = "".join(
+        f"<li><strong>{phase.order}. {escape(phase.title)}</strong>"
+        f"<p>{escape(phase.description)}</p></li>" for phase in proposal.phases
+    )
+    risks = "".join(f"<li>{escape(item)}</li>" for item in proposal.risks)
+    lines = "".join(
+        f"<tr><td>{escape(item.category)}</td><td>{escape(item.description)}</td>"
+        f"<td>{item.quantity or '—'} {escape(item.unit or '')}</td>"
+        f"<td>{item.total if item.total is not None else '—'}</td>"
+        f"<td>ESTIMATIVA</td></tr>" for item in proposal.preliminary_budget.line_items
+    )
+    actions = {
+        "generated": (("review", "Marcar como revisada"), ("reject", "Rejeitar")),
+        "reviewed": (("approve", "Aprovar explicitamente"), ("reject", "Rejeitar")),
+        "approved": (("apply", "Aplicar proposta"), ("reject", "Rejeitar")),
+    }.get(proposal.status.value, ())
+    forms = "".join(
+        f'<form method="post" action="/remodeling/proposals/{escape(proposal.id)}/{action}">'
+        f'<button type="submit">{escape(label)}</button></form>'
+        for action, label in actions
+    )
+    budget = proposal.preliminary_budget
+    return f"""<section class="panel proposal-detail">
+      <div class="panel-heading"><div><span class="eyebrow">Proposta preliminar</span>
+        <h2>Revisão humana obrigatória</h2></div>
+        <span class="pill">{escape(proposal.status.value.upper())}</span></div>
+      <p class="notice">Estimativa preliminar. Não constitui preço final nem proposta comercial.</p>
+      <h3>Fases</h3><ol class="phase-list">{phases}</ol>
+      <h3>Riscos</h3><ul>{risks}</ul>
+      <h3>Orçamento preliminar</h3>
+      <div class="table-scroll"><table class="projects-table"><thead><tr>
+        <th>Categoria</th><th>Descrição</th><th>Quantidade</th><th>Total EUR</th><th>Natureza</th>
+        </tr></thead><tbody>{lines}</tbody></table></div>
+      <p>Subtotal: <strong>{budget.subtotal} EUR</strong> · Contingência:
+        <strong>{budget.contingency} EUR</strong> · Total preliminar:
+        <strong>{budget.total} EUR</strong></p>
+      <div class="proposal-actions">{forms}</div>
+    </section>"""
 
 
 def _render_timeline(activities: tuple[CompanionActivity, ...]) -> str:

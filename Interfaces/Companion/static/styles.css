@@ -447,6 +447,15 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .checkbox { display: flex; align-items: center; gap: 8px; }
 .checkbox input { width: auto; }
 .handoff-response { padding: 12px; border-left: 3px solid var(--accent); background: var(--accent-soft); white-space: pre-wrap; }
+.remodeling-hero { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 14px; }
+.remodeling-layout { grid-template-columns: minmax(440px, 1.15fr) minmax(300px, .85fr); }
+.remodeling-flow { margin-top: 14px; }
+.remodeling-flow textarea, .handoff-card textarea { min-height: 150px; }
+.proposal-link { color: inherit; text-decoration: none; }
+.proposal-detail { margin-top: 14px; }
+.proposal-detail .phase-list { display: grid; gap: 10px; padding-left: 22px; }
+.proposal-detail .phase-list li { padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: #0b121b; }
+.proposal-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
 
 @media (max-width: 1180px) {
   .topbar { align-items: flex-start; }
@@ -468,6 +477,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
   .page-content { padding: 24px 24px 50px; }
   .split-grid, .dashboard-grid, .memory-layout { grid-template-columns: 1fr; }
   .intelligence-layout { grid-template-columns: 1fr; }
+  .remodeling-layout { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 620px) {
@@ -489,6 +499,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
   .quick-link, .primary-action { flex: 1 1 calc(50% - 7px); text-align: center; }
   .stack-form { grid-template-columns: 1fr; }
   .intelligence-form { grid-template-columns: 1fr; }
+  .remodeling-hero { align-items: flex-start; flex-direction: column; }
   .workspace-form, .workspace-grid { grid-template-columns: 1fr; }
   .form-span, .stack-form > button { grid-column: auto; }
   .doctor-card { align-items: flex-start; flex-direction: column; }

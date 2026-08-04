@@ -87,8 +87,9 @@ Orchestrator, Event, EventBus, Dispatcher, Logger e Lifecycle.
 ### Engines
 
 Capacidades internas especializadas. Atualmente há implementações funcionais de
-AI, Intelligence, Mission, Planning, Execution, Workspace, Projects e Memory
-Foundation.
+AI, Intelligence, Remodeling, Mission, Planning, Execution, Workspace, Projects
+e Memory Foundation. Remodeling é o primeiro Engine vertical especializado e
+coordena o fluxo por Application sem dependências inversas.
 Workspace, Projects e Memory possuem contracts de repository com adapters em
 memória e SQLite. Memory não possui embeddings ou IA. Knowledge, Search, Storage
 e AIRouter são estruturas vazias ou planejadas.
@@ -124,6 +125,7 @@ e Storage dependem de Blueprint e review arquitetural antes da criação.
 - Memory e Projects isolados por Workspace e integrados ao Companion;
 - apenas FakeProvider, sem rede ou credenciais;
 - Intelligence Router local, sem verificação externa de disponibilidade;
+- briefs e propostas de remodelação voláteis, com aplicação humana explícita;
 - EventBus síncrono e em memória;
 
 ## Fluxo de evolução

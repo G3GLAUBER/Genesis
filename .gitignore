@@ -23,3 +23,6 @@ htmlcov/
 
 # Environment
 .env
+
+# Local runtime data
+Data/*.db
