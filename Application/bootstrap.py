@@ -11,6 +11,7 @@ from Application.services import (
     ProjectService,
     RemodelingApplicationService,
     WorkspaceApplicationService,
+    WorkflowApplicationService,
 )
 from Core.registry import Registry
 from Engines.AI import AIOrchestrator, FakeProvider
@@ -38,6 +39,7 @@ from Engines.Workspace import (
     WorkspaceEngine,
     WorkspaceManager,
 )
+from Engines.Workflow import WorkflowEngine
 from Infrastructure.Persistence import (
     SQLiteDatabase,
     SQLiteMemoryRepository,
@@ -75,6 +77,8 @@ class ApplicationContainer:
     remodeling_engine: RemodelingEngine | None = None
     remodeling_service: RemodelingApplicationService | None = None
     mission_copilot_service: MissionCopilotApplicationService | None = None
+    workflow_engine: WorkflowEngine | None = None
+    workflow_service: WorkflowApplicationService | None = None
 
 
 def bootstrap_application(
@@ -168,6 +172,14 @@ def bootstrap_application(
         memory_service,
         workspace_service,
     )
+    workflow_engine = WorkflowEngine()
+    workflow_service = WorkflowApplicationService(
+        workflow_engine,
+        project_service,
+        mission_service,
+        mission_copilot_service=mission_copilot_service,
+        remodeling_service=remodeling_service,
+    )
     return ApplicationContainer(
         persistence_mode="sqlite" if use_sqlite else "memory",
         database=database,
@@ -195,6 +207,8 @@ def bootstrap_application(
         workspace_service=workspace_service,
         remodeling_engine=remodeling_engine,
         remodeling_service=remodeling_service,
+        workflow_engine=workflow_engine,
+        workflow_service=workflow_service,
     )
 
 

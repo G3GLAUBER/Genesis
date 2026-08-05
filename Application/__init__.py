@@ -15,6 +15,13 @@ from Application.services import (
     RemodelingApplicationService,
     RemodelingProposalRequest,
     WorkspaceApplicationService,
+    WorkflowApplicationService,
+)
+from Engines.Workflow import (
+    WorkflowObservation,
+    WorkflowRecommendation,
+    WorkflowStage,
+    WorkflowState,
 )
 
 
@@ -33,5 +40,10 @@ __all__ = [
     "RemodelingApplicationService",
     "RemodelingProposalRequest",
     "WorkspaceApplicationService",
+    "WorkflowApplicationService",
+    "WorkflowObservation",
+    "WorkflowRecommendation",
+    "WorkflowStage",
+    "WorkflowState",
     "bootstrap_application",
 ]

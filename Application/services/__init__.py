@@ -13,6 +13,7 @@ from Application.services.remodeling_service import (
     RemodelingProposalRequest,
 )
 from Application.services.workspace_service import WorkspaceApplicationService
+from Application.services.workflow_service import WorkflowApplicationService
 
 
 __all__ = [
@@ -25,4 +26,5 @@ __all__ = [
     "RemodelingApplicationService",
     "RemodelingProposalRequest",
     "WorkspaceApplicationService",
+    "WorkflowApplicationService",
 ]

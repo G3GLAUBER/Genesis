@@ -324,6 +324,7 @@ def _render_dashboard(
     <a href="/memory">Memória</a></nav>
 </section>
 {feedback}{health}
+{_render_primary_workflow(dashboard, projects)}
 <section class="attention-section" aria-labelledby="attention-title">
   <div class="section-heading"><div><span class="eyebrow">Prioridade</span>
     <h2 id="attention-title">Atenção agora</h2></div>
@@ -351,6 +352,63 @@ def _render_dashboard(
     {_render_command_timeline(timeline, command_center.primary_action_href)}
   </aside>
 </section>{result_content}"""
+
+
+def _render_primary_workflow(
+    dashboard: CompanionDashboard,
+    projects: tuple[Any, ...],
+) -> str:
+    workflow = dashboard.primary_workflow
+    if workflow is None:
+        return """<section class="workflow-focus empty-state" aria-labelledby="workflow-title">
+  <div><span class="eyebrow">Próxima ação</span>
+    <h2 id="workflow-title">Crie um Project para começar</h2>
+    <p>O Genesis acompanhará a etapa atual e mostrará sempre o próximo movimento.</p></div>
+  <a class="button-link" href="/projects#new-project">Criar primeiro Project</a>
+</section>"""
+    project = next(
+        (item for item in projects if item.id == workflow.project_id),
+        None,
+    )
+    project_title = project.title if project is not None else "Project"
+    blockers = "".join(
+        f"<li>{escape(blocker)}</li>" for blocker in workflow.blockers
+    )
+    blocker_content = (
+        f'<div class="workflow-blockers"><strong>Bloqueios</strong><ul>{blockers}</ul></div>'
+        if blockers
+        else ""
+    )
+    return f"""<section class="workflow-focus" aria-labelledby="workflow-title">
+  <div class="workflow-focus-heading"><div><span class="eyebrow">Próxima ação</span>
+    <h2 id="workflow-title">{escape(workflow.next_action)}</h2>
+    <p>{escape(workflow.recommendation.description)}</p></div>
+    <a class="button-link" href="{escape(workflow.recommendation.destination)}">Abrir destino</a></div>
+  <dl class="workflow-summary">
+    <div><dt>Project</dt><dd>{escape(project_title)}</dd></div>
+    <div><dt>Etapa</dt><dd>{escape(_workflow_stage_label(workflow.current_stage.value))}</dd></div>
+    <div><dt>Progresso</dt><dd>{workflow.progress}%</dd></div>
+    <div><dt>Motivo</dt><dd>{escape(workflow.reason)}</dd></div>
+  </dl>
+  <div class="progress workflow-progress" role="progressbar" aria-label="Progresso do Workflow"
+    aria-valuemin="0" aria-valuemax="100" aria-valuenow="{workflow.progress}">
+    <span style="width: {workflow.progress}%"></span></div>
+  {blocker_content}
+</section>"""
+
+
+def _workflow_stage_label(value: str) -> str:
+    labels = {
+        "project_created": "Project criado",
+        "mission_created": "Mission criada",
+        "mission_completed": "Mission Copilot concluído",
+        "proposal_pending": "Proposal em Review",
+        "proposal_approved": "Proposal aprovada",
+        "planning_pending": "Planning pronto",
+        "execution_pending": "Execution pendente",
+        "completed": "Concluído",
+    }
+    return labels.get(value, value.replace("_", " ").capitalize())
 
 
 def _render_mission_copilot_form(
@@ -592,13 +650,21 @@ def _render_projects(
 ) -> str:
     active = dashboard.active_workspace if dashboard else None
     workspace_id = active.id if active else ""
-    rows = "".join(_project_row(project) for project in reversed(projects))
+    workflows = {
+        workflow.project_id: workflow
+        for workflow in (dashboard.workflows if dashboard else ())
+    }
+    rows = "".join(
+        _project_row(project, workflows.get(project.id), detailed=True)
+        for project in reversed(projects)
+    )
     rows = rows or (
-        '<tr class="table-empty"><td colspan="4">'
+        '<tr class="table-empty"><td colspan="7">'
         "Nenhum projeto neste Workspace.</td></tr>"
     )
     table = f"""<div class="table-scroll"><table class="projects-table">
       <thead><tr><th>Projeto</th><th>Cliente</th><th>Status</th>
+      <th>Progresso</th><th>Etapa</th><th>Próxima ação</th>
       <th>Criado</th></tr></thead><tbody>{rows}</tbody></table></div>"""
     return f"""<section class="split-grid projects-layout">
   <article class="panel" id="new-project"><span class="eyebrow">Nova obra</span>
@@ -622,13 +688,29 @@ def _render_projects(
 </section>"""
 
 
-def _project_row(project: Any) -> str:
+def _project_row(
+    project: Any,
+    workflow: Any | None = None,
+    *,
+    detailed: bool = False,
+) -> str:
     status = escape(project.status.value.upper())
+    workflow_cells = ""
+    if detailed:
+        workflow_cells = (
+            f"<td>{workflow.progress}%</td>"
+            f"<td>{escape(_workflow_stage_label(workflow.current_stage.value))}</td>"
+            f'<td><a href="{escape(workflow.recommendation.destination)}">'
+            f"{escape(workflow.next_action)}</a></td>"
+            if workflow is not None
+            else "<td>—</td><td>Sem orientação</td><td>Rever Project</td>"
+        )
     return f"""<tr>
       <td><strong>{escape(project.title)}</strong>
         <small>{escape(project.address)}</small></td>
       <td>{escape(project.client)}</td>
       <td><span class="pill status-{escape(project.status.value)}">{status}</span></td>
+      {workflow_cells}
       <td><time>{project.created_at.astimezone().strftime('%d/%m/%Y')}</time></td>
     </tr>"""
 

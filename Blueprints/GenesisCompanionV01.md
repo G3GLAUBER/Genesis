@@ -103,6 +103,11 @@ Mission → Context → FREE_ONLY → Manual Handoff → resposta JSON
         → resultado revisável → Memory opcional
 ```
 
+Continuous Guidance adiciona uma orientação derivada a cada Project sem mudar
+seu estado ou executar ações. O Command Center destaca uma única “Próxima ação”
+com etapa, progresso, motivo e destino; Projects apresenta a mesma continuidade
+em cada registro.
+
 ## Navegação operacional
 
 - `/`: saudação contextual, atenção agora, onboarding, continuidade,
@@ -184,6 +189,8 @@ Endereço padrão: `http://127.0.0.1:8000/`.
   provider pago e não executa ações sugeridas;
 - resultados do Mission Copilot são voláteis; apenas a Memory opcional segue o
   armazenamento oficial configurado.
+- Workflows são recalculados deterministicamente a partir do estado disponível,
+  não possuem persistência e nunca executam a recomendação apresentada.
 
 ## Critérios de conclusão
 
@@ -208,3 +215,4 @@ Endereço padrão: `http://127.0.0.1:8000/`.
 - [x] Mission Copilot contextual com Manual Handoff e JSON seguro;
 - [x] resultado concreto, Project associado e Memory opcional;
 - [x] nenhuma rede externa, provider pago ou execução automática.
+- [x] próxima ação de Workflow visível no Command Center e em Projects.

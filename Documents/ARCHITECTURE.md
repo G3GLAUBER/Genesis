@@ -58,6 +58,11 @@ produz resultado estruturado somente após Manual Handoff e revisão humana.
 Sugestões nunca são executadas automaticamente e o armazenamento em Memory é
 opcional e explícito.
 
+O Workflow Engine avalia evidências já disponíveis de um Project e produz uma
+orientação imutável com etapa, progresso, próxima ação, motivo e bloqueios. A
+Application Layer compõe a observação pelos Services existentes; o Engine é
+determinístico, não persiste estado, não chama rede e não executa recomendações.
+
 Chamadas diretas entre contratos públicos de Engines são permitidas quando um
 Blueprint específico define a composição. O EventBus é usado para comunicação
 desacoplada quando existe um evento semanticamente aprovado; ele não é uma
@@ -94,9 +99,9 @@ Orchestrator, Event, EventBus, Dispatcher, Logger e Lifecycle.
 ### Engines
 
 Capacidades internas especializadas. Atualmente há implementações funcionais de
-AI, Intelligence, Remodeling, Mission, Planning, Execution, Workspace, Projects
-e Memory Foundation. Remodeling é o primeiro Engine vertical especializado e
-coordena o fluxo por Application sem dependências inversas.
+AI, Intelligence, Remodeling, Mission, Planning, Execution, Workspace,
+Projects, Memory Foundation e Workflow. Remodeling é o primeiro Engine vertical
+especializado e coordena o fluxo por Application sem dependências inversas.
 Workspace, Projects e Memory possuem contracts de repository com adapters em
 memória e SQLite. Memory não possui embeddings ou IA. Knowledge, Search, Storage
 e AIRouter são estruturas vazias ou planejadas.
@@ -134,6 +139,7 @@ e Storage dependem de Blueprint e review arquitetural antes da criação.
 - Intelligence Router local, sem verificação externa de disponibilidade;
 - briefs e propostas de remodelação voláteis, com aplicação humana explícita;
 - requests e resultados do Mission Copilot voláteis, sem execução automática;
+- Workflow recalculado sob demanda, sem persistência ou transições automáticas;
 - EventBus síncrono e em memória;
 
 ## Fluxo de evolução

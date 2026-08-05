@@ -15,8 +15,10 @@ from Application.services import (
     ProjectService,
     RemodelingApplicationService,
     WorkspaceApplicationService,
+    WorkflowApplicationService,
 )
 from Core.result import Result
+from Engines.Workflow import WorkflowState
 
 
 if TYPE_CHECKING:
@@ -78,6 +80,8 @@ class CompanionDashboard:
     last_activity: datetime | None = None
     storage_label: str = "Memória local"
     command_center: CompanionCommandCenter | None = None
+    workflows: tuple[WorkflowState, ...] = ()
+    primary_workflow: WorkflowState | None = None
 
 
 @dataclass(frozen=True)
@@ -324,6 +328,7 @@ class CompanionApplication:
         intelligence_service: IntelligenceApplicationService | None = None,
         remodeling_service: RemodelingApplicationService | None = None,
         mission_copilot_service: MissionCopilotApplicationService | None = None,
+        workflow_service: WorkflowApplicationService | None = None,
     ) -> None:
         workspace_service = (
             WorkspaceApplicationService(
@@ -341,6 +346,7 @@ class CompanionApplication:
         self._intelligence_service = intelligence_service
         self._remodeling_service = remodeling_service
         self._mission_copilot_service = mission_copilot_service
+        self._workflow_service = workflow_service
         self._persistence_mode = "memory"
         self._mission_service = MissionApplicationService(
             mission_engine,
@@ -369,6 +375,7 @@ class CompanionApplication:
         application._intelligence_service = container.intelligence_service
         application._remodeling_service = container.remodeling_service
         application._mission_copilot_service = container.mission_copilot_service
+        application._workflow_service = container.workflow_service
         application._persistence_mode = container.persistence_mode
         return application
 
@@ -455,6 +462,21 @@ class CompanionApplication:
                 message="MissionCopilotApplicationService não está disponível"
             )
         return self._mission_copilot_service.get_result_for_mission(mission_id)
+
+    def get_project_workflow(self, project_id: str | None) -> Result:
+        if self._workflow_service is None:
+            return Result.error(
+                message="WorkflowApplicationService não está disponível"
+            )
+        return self._workflow_service.evaluate_project(project_id)
+
+    def list_workflows(self, *, workspace_id: str | None = None) -> Result:
+        if self._workflow_service is None:
+            return Result.error(
+                message="WorkflowApplicationService não está disponível"
+            )
+        selected_id = workspace_id or self._workspace_service.active_workspace_id
+        return self._workflow_service.list_for_workspace(selected_id)
 
     def create_remodeling_brief(self, **values) -> Result:
         if self._remodeling_service is None:
@@ -630,6 +652,16 @@ class CompanionApplication:
         memory_records = memories.data if memories.is_success else ()
         projects = self.list_projects(workspace_id=workspace_id)
         project_records = projects.data if projects.is_success else ()
+        workflows_result = self.list_workflows(workspace_id=workspace_id)
+        workflows = workflows_result.data if workflows_result.is_success else ()
+        active_workflows = tuple(
+            state for state in reversed(workflows) if state.progress < 100
+        )
+        primary_workflow = (
+            active_workflows[0]
+            if active_workflows
+            else (workflows[-1] if workflows else None)
+        )
         activities = self.timeline(workspace_id=workspace_id)
         handoffs_result = self.list_manual_handoffs()
         handoffs = (
@@ -690,6 +722,8 @@ class CompanionApplication:
                 else "Memória local"
             ),
             command_center=command_center,
+            workflows=workflows,
+            primary_workflow=primary_workflow,
         )
 
     def execute_mission(
