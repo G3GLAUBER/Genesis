@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from enum import Enum
 from typing import Any, Mapping
 from uuid import UUID
 
@@ -9,6 +10,7 @@ from Engines.Document.models import (
     Document,
     DocumentMetadata,
     DocumentSection,
+    DocumentReview,
     DocumentStatus,
     DocumentTemplate,
     DocumentVersion,
@@ -128,6 +130,20 @@ def validate_version(version: object, *, expected_version: int | None = None) ->
     return None
 
 
+def validate_review(review: object) -> str | None:
+    if not isinstance(review, DocumentReview):
+        return "document review inválida"
+    if not _uuid(review.id) or not _uuid(review.document_id):
+        return "document review contém ID inválido"
+    if not isinstance(review.document_version, int) or review.document_version <= 0:
+        return "document review.document_version deve ser positivo"
+    if not _text(review.reviewer) or not isinstance(review.decision, Enum):
+        return "document review possui campos inválidos"
+    if review.created_at is not None and not _utc(review.created_at):
+        return "document review.created_at deve ser UTC"
+    return None
+
+
 def validate_document(document: object, template: DocumentTemplate | None = None) -> str | None:
     if not isinstance(document, Document):
         return "document inválido"
@@ -192,6 +208,12 @@ def validate_document(document: object, template: DocumentTemplate | None = None
                 return error
         if document.versions[-1].version != document.current_version:
             return "current_version não corresponde ao snapshot atual"
+    for review in document.reviews:
+        error = validate_review(review)
+        if error:
+            return error
+        if review.document_id != document.id or review.document_version > document.current_version:
+            return "document review referencia versão inválida"
     if document.created_at is not None and not _utc(document.created_at):
         return "created_at deve ser UTC"
     if document.updated_at is not None and not _utc(document.updated_at):
@@ -201,5 +223,5 @@ def validate_document(document: object, template: DocumentTemplate | None = None
 
 __all__ = [
     "validate_brand_profile", "validate_document", "validate_metadata",
-    "validate_section", "validate_template", "validate_version",
+    "validate_review", "validate_section", "validate_template", "validate_version",
 ]

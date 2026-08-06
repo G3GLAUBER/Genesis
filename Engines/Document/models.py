@@ -55,6 +55,13 @@ class DocumentTemplateStatus(str, Enum):
     ARCHIVED = "archived"
 
 
+class DocumentReviewDecision(str, Enum):
+    COMMENTED = "commented"
+    ACCEPTED = "accepted"
+    REQUESTED_CHANGES = "requested_changes"
+    REJECTED = "rejected"
+
+
 @dataclass(frozen=True)
 class DocumentMetadata:
     workspace_id: str
@@ -185,6 +192,21 @@ class DocumentVersion:
 
 
 @dataclass(frozen=True)
+class DocumentReview:
+    id: str
+    document_id: str
+    document_version: int
+    reviewer: str
+    decision: DocumentReviewDecision
+    notes: str = ""
+    created_at: datetime | None = None
+
+    def __post_init__(self) -> None:
+        for field in ("id", "document_id", "reviewer", "notes"):
+            object.__setattr__(self, field, _text(getattr(self, field)))
+
+
+@dataclass(frozen=True)
 class Document:
     id: str
     workspace_id: str
@@ -202,16 +224,19 @@ class Document:
     created_at: datetime | None = None
     updated_at: datetime | None = None
     source_document_id: str | None = None
+    reviews: tuple[DocumentReview, ...] = ()
 
     def __post_init__(self) -> None:
         for field in ("id", "workspace_id", "document_type", "title", "template_id", "brand_profile_id", "source_document_id"):
             object.__setattr__(self, field, _text(getattr(self, field)))
         object.__setattr__(self, "sections", tuple(self.sections))
         object.__setattr__(self, "versions", tuple(self.versions))
+        object.__setattr__(self, "reviews", tuple(self.reviews))
 
 
 __all__ = [
     "BrandProfile", "Document", "DocumentMetadata", "DocumentSection",
-    "DocumentStatus", "DocumentTemplate", "DocumentTemplateStatus",
-    "DocumentType", "DocumentVersion",
+    "DocumentReview", "DocumentReviewDecision", "DocumentStatus",
+    "DocumentTemplate", "DocumentTemplateStatus", "DocumentType",
+    "DocumentVersion",
 ]
