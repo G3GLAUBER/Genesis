@@ -7,6 +7,10 @@ from Application.services.mission_copilot_service import (
 )
 from Application.services.mission_service import MissionApplicationService
 from Application.services.project_service import ProjectService
+from Application.services.proposal_service import (
+    ApplyConfirmation,
+    ProposalApplicationService,
+)
 from Application.services.remodeling_service import (
     RemodelingApplicationReport,
     RemodelingApplicationService,
@@ -22,6 +26,8 @@ __all__ = [
     "MissionApplicationService",
     "MissionCopilotApplicationService",
     "ProjectService",
+    "ApplyConfirmation",
+    "ProposalApplicationService",
     "RemodelingApplicationReport",
     "RemodelingApplicationService",
     "RemodelingProposalRequest",

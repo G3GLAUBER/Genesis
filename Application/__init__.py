@@ -7,10 +7,12 @@ from Application.models import (
 )
 from Application.services import (
     IntelligenceApplicationService,
+    ApplyConfirmation,
     MemoryService,
     MissionApplicationService,
     MissionCopilotApplicationService,
     ProjectService,
+    ProposalApplicationService,
     RemodelingApplicationReport,
     RemodelingApplicationService,
     RemodelingProposalRequest,
@@ -27,6 +29,7 @@ from Engines.Workflow import (
 
 __all__ = [
     "ApplicationContainer",
+    "ApplyConfirmation",
     "IntelligenceApplicationService",
     "MemoryService",
     "MissionApplicationExecution",
@@ -36,6 +39,7 @@ __all__ = [
     "MissionCopilotRequest",
     "MissionCopilotResult",
     "ProjectService",
+    "ProposalApplicationService",
     "RemodelingApplicationReport",
     "RemodelingApplicationService",
     "RemodelingProposalRequest",

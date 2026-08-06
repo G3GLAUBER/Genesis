@@ -9,6 +9,7 @@ from Application.services import (
     MissionApplicationService,
     MissionCopilotApplicationService,
     ProjectService,
+    ProposalApplicationService,
     RemodelingApplicationService,
     WorkspaceApplicationService,
     WorkflowApplicationService,
@@ -28,6 +29,7 @@ from Engines.Intelligence import (
 )
 from Engines.Mission import MissionEngine
 from Engines.Planning import Planner
+from Engines.Proposal import ProposalEngine
 from Engines.Projects import (
     InMemoryProjectRepository,
     ProjectEngine,
@@ -79,6 +81,8 @@ class ApplicationContainer:
     mission_copilot_service: MissionCopilotApplicationService | None = None
     workflow_engine: WorkflowEngine | None = None
     workflow_service: WorkflowApplicationService | None = None
+    proposal_engine: ProposalEngine | None = None
+    proposal_service: ProposalApplicationService | None = None
 
 
 def bootstrap_application(
@@ -180,6 +184,14 @@ def bootstrap_application(
         mission_copilot_service=mission_copilot_service,
         remodeling_service=remodeling_service,
     )
+    proposal_engine = ProposalEngine()
+    proposal_service = ProposalApplicationService(
+        proposal_engine,
+        mission_service,
+        project_service,
+        memory_service,
+        workspace_service,
+    )
     return ApplicationContainer(
         persistence_mode="sqlite" if use_sqlite else "memory",
         database=database,
@@ -209,6 +221,8 @@ def bootstrap_application(
         remodeling_service=remodeling_service,
         workflow_engine=workflow_engine,
         workflow_service=workflow_service,
+        proposal_engine=proposal_engine,
+        proposal_service=proposal_service,
     )
 
 

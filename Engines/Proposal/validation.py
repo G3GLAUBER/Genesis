@@ -395,6 +395,13 @@ def validate_apply_report(report: object) -> str | None:
         for key, value in report.reasons.items()
     ):
         return "ProposalApplyReport.reasons inválido"
+    if not isinstance(report.results, Mapping):
+        return "ProposalApplyReport.results deve ser mapa"
+    if not all(
+        _is_uuid(key) and isinstance(value, Mapping)
+        for key, value in report.results.items()
+    ):
+        return "ProposalApplyReport.results inválido"
     if not isinstance(report.final_status, ProposalStatus):
         return "ProposalApplyReport.final_status inválido"
     if report.final_status not in (

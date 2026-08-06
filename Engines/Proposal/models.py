@@ -255,6 +255,7 @@ class ProposalApplyReport:
     workspace_id: str | None = None
     idempotency_key: str | None = None
     reasons: Mapping[str, str] = MappingProxyType({})
+    results: Mapping[str, Mapping[str, Any]] = MappingProxyType({})
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "proposal_id", _normalize_text(self.proposal_id))
@@ -267,6 +268,7 @@ class ProposalApplyReport:
             _normalize_text(self.idempotency_key),
         )
         object.__setattr__(self, "reasons", _freeze(self.reasons))
+        object.__setattr__(self, "results", _freeze(self.results))
 
 
 __all__ = [
