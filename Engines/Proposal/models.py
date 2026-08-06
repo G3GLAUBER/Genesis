@@ -75,6 +75,7 @@ class ReviewDecision(Enum):
 
 
 class ApplyChangeStatus(Enum):
+    PENDING = "pending"
     APPLIED = "applied"
     SKIPPED = "skipped"
     FAILED = "failed"
@@ -187,6 +188,10 @@ class Proposal:
     approved_by: str | None = None
     applied_at: datetime | None = None
     rejection_reason: str | None = None
+    document_id: str | None = None
+    reviews: tuple[ProposalReview, ...] = ()
+    apply_reports: tuple[ProposalApplyReport, ...] = ()
+    approval_notes: str = ""
 
     def __post_init__(self) -> None:
         for field in (
@@ -200,6 +205,8 @@ class Proposal:
             "confidence_reason",
             "approved_by",
             "rejection_reason",
+            "document_id",
+            "approval_notes",
         ):
             object.__setattr__(self, field, _normalize_text(getattr(self, field)))
         object.__setattr__(self, "changes", tuple(self.changes))
@@ -211,6 +218,8 @@ class Proposal:
             _normalize_texts(self.missing_information),
         )
         object.__setattr__(self, "sources", tuple(self.sources))
+        object.__setattr__(self, "reviews", tuple(self.reviews))
+        object.__setattr__(self, "apply_reports", tuple(self.apply_reports))
 
 
 @dataclass(frozen=True)
@@ -218,10 +227,21 @@ class ProposalApplyPlan:
     proposal_id: str
     proposal_version: int
     changes: tuple[ProposalChange, ...] = ()
+    workspace_id: str | None = None
+    idempotency_key: str | None = None
+    statuses: Mapping[str, ApplyChangeStatus] = MappingProxyType({})
+    created_at: datetime | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "proposal_id", _normalize_text(self.proposal_id))
         object.__setattr__(self, "changes", tuple(self.changes))
+        object.__setattr__(self, "workspace_id", _normalize_text(self.workspace_id))
+        object.__setattr__(
+            self,
+            "idempotency_key",
+            _normalize_text(self.idempotency_key),
+        )
+        object.__setattr__(self, "statuses", _freeze(self.statuses))
 
 
 @dataclass(frozen=True)
@@ -232,11 +252,21 @@ class ProposalApplyReport:
     final_status: ProposalStatus = ProposalStatus.APPLY_FAILED
     reason: str = ""
     completed_at: datetime | None = None
+    workspace_id: str | None = None
+    idempotency_key: str | None = None
+    reasons: Mapping[str, str] = MappingProxyType({})
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "proposal_id", _normalize_text(self.proposal_id))
         object.__setattr__(self, "statuses", _freeze(self.statuses))
         object.__setattr__(self, "reason", _normalize_text(self.reason))
+        object.__setattr__(self, "workspace_id", _normalize_text(self.workspace_id))
+        object.__setattr__(
+            self,
+            "idempotency_key",
+            _normalize_text(self.idempotency_key),
+        )
+        object.__setattr__(self, "reasons", _freeze(self.reasons))
 
 
 __all__ = [

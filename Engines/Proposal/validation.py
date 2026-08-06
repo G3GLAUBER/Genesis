@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
@@ -112,7 +112,28 @@ def _validate_payload(value: object, field: str) -> str | None:
     return None
 
 
-def validate_proposal_change(change: object) -> str | None:
+def _validate_workspace_payload(value: object, workspace_id: str) -> str | None:
+    """Reject explicit workspace references that cross the Proposal boundary."""
+
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            if key == "workspace_id" and item != workspace_id:
+                return "ProposalChange referencia outro Workspace"
+            nested_error = _validate_workspace_payload(item, workspace_id)
+            if nested_error:
+                return nested_error
+    elif isinstance(value, (tuple, list, set, frozenset)):
+        for item in value:
+            nested_error = _validate_workspace_payload(item, workspace_id)
+            if nested_error:
+                return nested_error
+    return None
+
+
+def validate_proposal_change(
+    change: object,
+    workspace_id: str | None = None,
+) -> str | None:
     if not isinstance(change, ProposalChange):
         return "changes deve conter somente ProposalChange"
     if not _is_uuid(change.id):
@@ -137,6 +158,11 @@ def validate_proposal_change(change: object) -> str | None:
     after_error = _validate_payload(change.after, "ProposalChange.after")
     if after_error:
         return after_error
+    if workspace_id is not None:
+        for payload in (change.before, change.after):
+            workspace_error = _validate_workspace_payload(payload, workspace_id)
+            if workspace_error:
+                return workspace_error
     if change.action is ProposalAction.CREATE:
         if change.target_id is not None:
             return "CREATE não pode declarar target_id"
@@ -240,7 +266,7 @@ def validate_proposal(proposal: object) -> str | None:
         if not _valid_texts(getattr(proposal, field)):
             return f"Proposal.{field} deve conter textos não vazios"
     for change in proposal.changes:
-        change_error = validate_proposal_change(change)
+        change_error = validate_proposal_change(change, proposal.workspace_id)
         if change_error:
             return change_error
     graph_error = _validate_change_graph(proposal.changes)
@@ -250,6 +276,51 @@ def validate_proposal(proposal: object) -> str | None:
         source_error = validate_proposal_source(source, proposal.workspace_id)
         if source_error:
             return source_error
+    if proposal.document_id is not None and not _is_uuid(proposal.document_id):
+        return "Proposal.document_id deve ser um UUID válido"
+    for review in proposal.reviews:
+        review_error = validate_review(review)
+        if review_error:
+            return review_error
+        if review.proposal_id != proposal.id:
+            return "ProposalReview pertence a outra Proposal"
+    for report in proposal.apply_reports:
+        report_error = validate_apply_report(report)
+        if report_error:
+            return report_error
+        if report.proposal_id != proposal.id:
+            return "ProposalApplyReport pertence a outra Proposal"
+    return None
+
+
+def validate_status_transition(
+    current: ProposalStatus,
+    target: ProposalStatus,
+) -> str | None:
+    transitions = {
+        ProposalStatus.DRAFT: {
+            ProposalStatus.GENERATED,
+            ProposalStatus.REJECTED,
+        },
+        ProposalStatus.GENERATED: {
+            ProposalStatus.REVIEWED,
+            ProposalStatus.REJECTED,
+        },
+        ProposalStatus.REVIEWED: {
+            ProposalStatus.REVIEWED,
+            ProposalStatus.APPROVED,
+            ProposalStatus.REJECTED,
+        },
+        ProposalStatus.APPROVED: {
+            ProposalStatus.APPLIED,
+            ProposalStatus.APPLY_FAILED,
+        },
+        ProposalStatus.REJECTED: set(),
+        ProposalStatus.APPLIED: set(),
+        ProposalStatus.APPLY_FAILED: set(),
+    }
+    if target not in transitions.get(current, set()):
+        return f"Transição inválida: {current.value} → {target.value}"
     return None
 
 
@@ -280,10 +351,25 @@ def validate_apply_plan(plan: object) -> str | None:
         return "ProposalApplyPlan.proposal_id deve ser UUID"
     if not isinstance(plan.proposal_version, int) or plan.proposal_version <= 0:
         return "ProposalApplyPlan.proposal_version deve ser inteiro positivo"
+    if plan.workspace_id is not None and not _is_uuid(plan.workspace_id):
+        return "ProposalApplyPlan.workspace_id deve ser UUID"
+    if plan.idempotency_key is not None and not _non_empty_text(plan.idempotency_key):
+        return "ProposalApplyPlan.idempotency_key deve ser texto não vazio"
+    if not isinstance(plan.statuses, Mapping):
+        return "ProposalApplyPlan.statuses deve ser mapa"
+    if not all(
+        _is_uuid(key) and value is ApplyChangeStatus.PENDING
+        for key, value in plan.statuses.items()
+    ):
+        return "ProposalApplyPlan.statuses inválido"
+    if plan.created_at is not None and not _is_aware_utc(plan.created_at):
+        return "ProposalApplyPlan.created_at deve ser datetime com timezone"
     for change in plan.changes:
-        error = validate_proposal_change(change)
+        error = validate_proposal_change(change, plan.workspace_id)
         if error:
             return error
+    if plan.statuses and set(plan.statuses) != {change.id for change in plan.changes}:
+        return "ProposalApplyPlan.statuses deve conter exatamente as mudanças"
     return _validate_change_graph(plan.changes)
 
 
@@ -294,13 +380,67 @@ def validate_apply_report(report: object) -> str | None:
         return "ProposalApplyReport.proposal_id deve ser UUID"
     if not isinstance(report.proposal_version, int) or report.proposal_version <= 0:
         return "ProposalApplyReport.proposal_version deve ser inteiro positivo"
+    if report.workspace_id is not None and not _is_uuid(report.workspace_id):
+        return "ProposalApplyReport.workspace_id deve ser UUID"
+    if report.idempotency_key is not None and not _non_empty_text(report.idempotency_key):
+        return "ProposalApplyReport.idempotency_key deve ser texto não vazio"
     if not isinstance(report.statuses, Mapping):
         return "ProposalApplyReport.statuses deve ser mapa"
     if not all(_is_uuid(key) and isinstance(value, ApplyChangeStatus) for key, value in report.statuses.items()):
         return "ProposalApplyReport.statuses inválido"
+    if not isinstance(report.reasons, Mapping):
+        return "ProposalApplyReport.reasons deve ser mapa"
+    if not all(
+        _is_uuid(key) and _non_empty_text(value)
+        for key, value in report.reasons.items()
+    ):
+        return "ProposalApplyReport.reasons inválido"
+    if not isinstance(report.final_status, ProposalStatus):
+        return "ProposalApplyReport.final_status inválido"
+    if report.final_status not in (
+        ProposalStatus.APPLIED,
+        ProposalStatus.APPLY_FAILED,
+    ):
+        return "ProposalApplyReport.final_status deve ser APPLIED ou APPLY_FAILED"
+    if report.final_status is ProposalStatus.APPLY_FAILED and not (
+        _non_empty_text(report.reason) or report.reasons
+    ):
+        return "Apply FAILED exige motivo"
+    if report.final_status is ProposalStatus.APPLIED and any(
+        status is not ApplyChangeStatus.APPLIED
+        for status in report.statuses.values()
+    ):
+        return "Apply APPLIED exige todas as mudanças aplicadas"
     if report.completed_at is not None and not _is_aware_utc(report.completed_at):
         return "ProposalApplyReport.completed_at deve ser datetime com timezone"
     return None
+
+
+def topologically_order_changes(
+    changes: tuple[ProposalChange, ...],
+) -> tuple[ProposalChange, ...] | None:
+    """Return deterministic dependency order, or None for an invalid graph."""
+
+    ids = {change.id for change in changes}
+    if len(ids) != len(changes):
+        return None
+    by_id = {change.id: change for change in changes}
+    remaining = set(ids)
+    ordered: list[ProposalChange] = []
+    while remaining:
+        ready = sorted(
+            (
+                by_id[change_id]
+                for change_id in remaining
+                if set(by_id[change_id].dependencies).isdisjoint(remaining)
+            ),
+            key=lambda change: (change.order, change.id),
+        )
+        if not ready:
+            return None
+        ordered.extend(ready)
+        remaining.difference_update(change.id for change in ready)
+    return tuple(ordered)
 
 
 __all__ = [
@@ -312,4 +452,6 @@ __all__ = [
     "validate_proposal_source",
     "validate_recommendation",
     "validate_review",
+    "validate_status_transition",
+    "topologically_order_changes",
 ]
