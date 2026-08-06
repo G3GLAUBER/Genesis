@@ -5,6 +5,7 @@ from Application.adapters.proposal_apply import (
     ProjectMissionProposalAdapter,
     ProposalChangeAdapter,
 )
+from Application.adapters.proposal_document import ProposalDocumentAdapter
 
 __all__ = [
     "ApplyExecution",
@@ -12,4 +13,5 @@ __all__ = [
     "MissionProposalAdapter",
     "ProjectMissionProposalAdapter",
     "ProposalChangeAdapter",
+    "ProposalDocumentAdapter",
 ]

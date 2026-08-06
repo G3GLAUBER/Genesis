@@ -117,6 +117,8 @@ class DocumentEngine:
         reason: str | None = None,
         created_by: str | None = None,
         source_version: int | None = None,
+        source_proposal_id: str | None = None,
+        source_proposal_version: int | None = None,
         reviews: tuple[DocumentReview, ...] | None = None,
     ) -> Document:
         selected_sections = tuple(document.sections if sections is None else sections)
@@ -136,6 +138,8 @@ class DocumentEngine:
             reason=reason,
             content_hash=DocumentEngine._hash(document, selected_sections),
             source_version=source_version,
+            source_proposal_id=source_proposal_id,
+            source_proposal_version=source_proposal_version,
         )
         return replace(
             document,
@@ -169,6 +173,40 @@ class DocumentEngine:
         if error:
             return Result.error(message=error)
         return Result.success(message="Document GENERATED registrado", data=generated)
+
+    def create_version(
+        self,
+        document: Document,
+        sections: Sequence[DocumentSection] | None = None,
+        *,
+        status: DocumentStatus | None = None,
+        created_by: str | None = None,
+        reason: str | None = "snapshot",
+        source_proposal_id: str | None = None,
+        source_proposal_version: int | None = None,
+    ) -> Result:
+        """Create one immutable editorial snapshot without changing lifecycle."""
+
+        if not isinstance(document, Document):
+            return Result.error(message="document inválido")
+        selected_status = status or document.status
+        if not isinstance(selected_status, DocumentStatus):
+            return Result.error(message="status editorial inválido")
+        if selected_status is DocumentStatus.ARCHIVED and document.status is not DocumentStatus.ARCHIVED:
+            return Result.error(message="snapshot ARCHIVED exige archive")
+        versioned = self._snapshot(
+            document,
+            status=selected_status,
+            sections=sections,
+            created_by=created_by,
+            reason=reason,
+            source_proposal_id=source_proposal_id,
+            source_proposal_version=source_proposal_version,
+        )
+        error = validate_document(versioned)
+        if error:
+            return Result.error(message=error)
+        return Result.success(message="DocumentVersion criada", data=versioned)
 
     def start_review(self, document: Document, reviewer: str) -> Result:
         if document.status not in (DocumentStatus.GENERATED, DocumentStatus.REVIEWED):
