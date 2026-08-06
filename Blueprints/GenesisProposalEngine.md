@@ -13,6 +13,31 @@ O Engine deve ser reutilizável por Copilots verticais (incluindo Remodeling) e
 manter uma única fonte de verdade para a autoridade, o ciclo de vida e a
 prévia das mudanças de uma Proposal.
 
+## Autoridade do agregado e relação com Document
+
+`Proposal` é o agregado comercial oficial. Ele é a única fonte de verdade para
+`ProposalStatus`, `Proposal.version`, `ProposalChange`, `ProposalReview`,
+`Approve`, `Reject`, `Apply`, idempotência, `ProposalApplyPlan` e
+`ProposalApplyReport`.
+
+`Document` é o agregado editorial oficial, definido em
+`Blueprints/GenesisDocumentEngine.md`. Ele é a única fonte de verdade para
+estrutura documental, seções, templates, branding, metadados documentais,
+status editorial, snapshots, `DocumentVersion`, preview estruturado e futura
+renderização.
+
+Proposal não herda de Document. Uma Proposal pode conter um `document_id`
+opcional e retrocompatível, sem alterar o significado dos campos comerciais.
+A integração futura é unidirecional e explícita:
+
+```text
+Proposal → ProposalDocumentAdapter → Document
+```
+
+O adapter não sincroniza estados ou versões automaticamente de volta para
+Proposal. Template e branding pertencem ao Document Engine; Proposal não
+absorve lógica visual.
+
 ## Decisão arquitetural necessária
 
 Hoje `GenesisRemodelingCopilot.md` descreve transições e modelos de Proposal
@@ -93,6 +118,8 @@ tuplas ou mapas imutáveis. Textos são normalizados sem alterar o significado.
 Agregado principal com:
 
 - `id`, `version` e `created_at`;
+- `document_id` opcional, aditivo e retrocompatível, quando existir uma
+  representação editorial associada;
 - `workspace_id` obrigatório e `project_id` opcional;
 - `mission_id` opcional quando a Proposal nasce de uma Mission;
 - `title`, `objective` e `summary` obrigatórios após geração;
@@ -103,6 +130,12 @@ Agregado principal com:
 - `confidence` em escala controlada (`LOW`, `MEDIUM`, `HIGH`) com justificativa;
 - `created_by` (`USER`, `GENESIS`, `MANUAL_HANDOFF`);
 - `approved_at`, `approved_by`, `applied_at` e `rejection_reason` opcionais.
+
+`document_id` é apenas um vínculo. `workspace_id`, `project_id`, `mission_id` e
+as demais relações comerciais continuam oficiais no agregado Proposal;
+`DocumentMetadata` pode referenciá-las para rastreabilidade, mas não as
+substitui. A Sprint 1 pode permanecer sem esse campo; sua inclusão futura deve
+ser opcional, aditiva e compatível com os construtores e consumidores existentes.
 
 ### `ProposalChange`
 
@@ -173,6 +206,26 @@ O Engine não executa `ProposalApplyPlan`. A Application Service passa cada
 mudança a um adapter explícito do domínio, preservando o controle e a
 idempotência. Todas as falhas de validação retornam `Result.error`; exceções de
 adapters são convertidas em `ProposalApplyReport` seguro.
+
+## Versionamento e status separados
+
+`Proposal.version` e `DocumentVersion.version` são contadores independentes:
+
+- `Proposal.version` representa evolução comercial e decisória;
+- `DocumentVersion.version` representa evolução editorial e visual.
+
+Todo `DocumentVersion` derivado de uma Proposal deve registrar
+`source_proposal_id`, `source_proposal_version`, `template_id`,
+`template_version`, `brand_profile_id` e `brand_profile_version` ou snapshot
+equivalente. Uma versão documental não altera a versão da Proposal.
+
+`DocumentStatus` nunca substitui `ProposalStatus`. Um eventual
+`DocumentStatus.APPROVED` significa somente aprovação editorial e nunca autoriza
+Proposal Apply. O domínio Document não possui estado `APPLIED`.
+
+`ProposalReview` permanece a revisão comercial oficial. Revisões editoriais
+ocorrem por nova `DocumentVersion` ou eventos editoriais, sem criar uma segunda
+`ProposalReview`.
 
 ## Regras e invariantes
 
@@ -248,6 +301,8 @@ regras específicas de brief, orçamento e parser. A migração deve preservar:
 - cálculo financeiro, impostos, contratos comerciais ou garantia de resultado;
 - replanejamento automático, undo universal ou transações distribuídas;
 - alterações em Core, CLI, Registry, AIOrchestrator ou contratos de domínio.
+- lógica de template, branding ou renderização no Proposal Engine;
+- renderers de PDF, DOCX, HTML, impressão, e-mail ou portal do cliente.
 
 ## Testes obrigatórios
 
@@ -273,4 +328,3 @@ regras específicas de brief, orçamento e parser. A migração deve preservar:
 - [ ] nenhuma ação ocorre antes de aprovação e confirmação de Apply;
 - [ ] falhas parciais são seguras, explícitas e recuperáveis;
 - [ ] documentação, suíte completa e Doctor revisados antes do commit.
-

@@ -32,6 +32,18 @@ Companion, HTTP, repositories, providers, SDKs ou rede. A Application compõe
 contexto e chama adapters oficiais de Mission, Project e Memory sem duplicar
 suas regras.
 
+`Proposal` é o agregado comercial oficial. A relação editorial é opcional e
+unidirecional, por adapter futuro:
+
+```text
+Proposal → ProposalDocumentAdapter → Document
+```
+
+`document_id`, quando adicionado, será opcional e retrocompatível. Não haverá
+herança Proposal–Document, sincronização bidirecional automática ou substituição
+de `Proposal.version` por `DocumentVersion.version`. Template, branding,
+seções e status editorial pertencem exclusivamente ao Document Engine.
+
 ### Estados e transições
 
 ```text
@@ -117,6 +129,28 @@ fuso horário e coleções convertidas para tuplas/mapas imutáveis:
 Falhas de contrato usam `Result.error`; mensagens não incluem exceções brutas,
 payloads sensíveis ou credenciais.
 
+O campo `document_id` poderá ser acrescentado ao agregado Proposal somente como
+referência opcional. Nenhuma assinatura pública existente, incluindo
+`create_draft`, pode ser removida ou ter sua semântica alterada.
+
+## Ordem inter-Blueprint congelada
+
+Após a Sprint 1 já implementada, a ordem segura de evolução é:
+
+1. congelamento documental da relação Proposal–Document;
+2. lifecycle comercial e Apply do Proposal;
+3. fundação pura do Document Engine;
+4. adapter unidirecional Proposal → Document;
+5. `DocumentApplicationService` e composição pela Application;
+6. integração de contexto com Projects, Workflow, Mission Copilot e Memory;
+7. migração controlada do Remodeling;
+8. integração de apresentação no Companion;
+9. renderers futuros, fora do domínio.
+
+O Document Engine não deve antecipar o adapter nem alterar a Sprint 1 do
+Proposal. O adapter só pode ser implementado depois de ambos os contratos
+estarem congelados.
+
 ---
 
 ## Sprint 0 — Gate arquitetural e contrato executável
@@ -125,6 +159,10 @@ payloads sensíveis ou credenciais.
 
 Confirmar que a extração de Proposal não cria duas fontes de verdade e congelar
 o contrato que os Sprints seguintes implementarão.
+
+Este gate também congela que Proposal possui o lifecycle comercial e Document
+possui o lifecycle editorial, com versões independentes e vínculo opcional por
+`document_id`.
 
 ### Escopo permitido
 
@@ -670,4 +708,3 @@ Se surgir necessidade de persistência, novo estado, novo adapter, alteração d
 rota, dependência externa, mudança de contrato ou nova responsabilidade, parar o
 Sprint, registrar o conflito e solicitar review arquitetural. Não resolver por
 interpretação local nem ampliar a lista de arquivos permitidos.
-
